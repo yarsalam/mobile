@@ -1,27 +1,22 @@
 import {fetchWithAuth} from '../../lib/fetchWithAuth';
 
-export const initCardPayment = (body: {
-  productCode: string;
-  amountRials: number;
-}) =>
-  fetchWithAuth('/payments/start/card', {
+// Backend contract: POST /payments/deposit/card accepts { amountRials }.
+export const initCardPayment = (body: {amountRials: number}) =>
+  fetchWithAuth('/payments/deposit/card', {
     method: 'POST',
-    body: JSON.stringify(body),
+    body: JSON.stringify({amountRials: body.amountRials}),
   });
 
-export const initCryptoPayment = (body: {
-  productCode: string;
-  amountCents: number;
-}) =>
-  fetchWithAuth('/payments/start/crypto', {
+// Backend contract: POST /payments/deposit/crypto also accepts { amountRials }.
+// The backend performs the currency conversion; the client must not send amountCents.
+export const initCryptoPayment = (body: {amountRials: number}) =>
+  fetchWithAuth('/payments/deposit/crypto', {
     method: 'POST',
-    body: JSON.stringify(body),
+    body: JSON.stringify({amountRials: body.amountRials}),
   });
 
 export const submitProof = (body: {paymentId: number; proofUrl: string}) =>
   fetchWithAuth(`/payments/${body.paymentId}/proof`, {
     method: 'POST',
-    body: JSON.stringify({
-      proofUrl: body.proofUrl,
-    }),
+    body: JSON.stringify({proofUrl: body.proofUrl}),
   });
