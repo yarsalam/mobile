@@ -2,7 +2,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useEffect, useState} from 'react';
 import {decodeToken} from './decodeToken';
 import {useAuth} from '../context/AuthContext';
-import {useToast} from '../context/ToastContext';
 import {RootStackParamList} from '../../types/rootStackParamList';
 import {getRegisterStatus} from '../api/auth/queries/auth';
 
@@ -11,62 +10,66 @@ export const useCheckAuthOrRegisterStep = () => {
   const [initialRoute, setInitialRoute] =
     useState<keyof RootStackParamList>('Login');
   const [hasChecked, setHasChecked] = useState(false);
+
   useEffect(() => {
     if (isAuthLoading) return;
 
+    let cancelled = false;
+    const finish = (route: keyof RootStackParamList) => {
+      if (cancelled) return;
+      setInitialRoute(route);
+      setHasChecked(true);
+    };
+
     (async () => {
-      // 1) Already authenticated (permanent token + /me succeeded) → UserPanel
       if (isAuthenticated) {
-        setInitialRoute('UserPanel');
-        setHasChecked(true);
+        finish('UserPanel');
         return;
       }
 
       const phone = await AsyncStorage.getItem('registerPhone');
-
-      // 2) No phone ever registered on this device → Register
       if (!phone) {
-        setInitialRoute('Register');
-        setHasChecked(true);
+        finish('Register');
         return;
       }
 
-      // 3) Phone exists, token exists → decode it
       if (token) {
-        const d = decodeToken(token);
-        const expired = d.exp * 1000 < Date.now();
+        const decoded = decodeToken(token);
+        const expiry = typeof decoded?.exp === 'number' ? decoded.exp * 1000 : 0;
+        const expired = expiry <= Date.now();
 
-        if (!expired && d.temporary) {
-          setInitialRoute('multiStepProfile');
-          setHasChecked(true);
+        if (!expired && decoded?.temporary === true) {
+          finish('multiStepProfile');
           return;
         }
 
-        if (!d.temporary && !expired) {
-          setInitialRoute('UserPanel');
-          setHasChecked(true);
+        if (!expired && decoded && decoded.temporary !== true) {
+          finish('Login');
           return;
         }
 
-        // expired token
         await AsyncStorage.removeItem('auth_token');
-        setInitialRoute('Login');
-        setHasChecked(true);
-        return;
+        await AsyncStorage.removeItem('temp_auth_token');
       }
 
-      // 4) Phone exists, no token → this is the logged-out-user case
-      const reg = await getRegisterStatus(phone);
-
-      if (reg.isVerified && reg.isCompleted) {
-        setInitialRoute('Login'); // ← was already correct here...
-      } else if (reg.isVerified) {
-        setInitialRoute('multiStepProfile');
-      } else {
-        setInitialRoute('Register');
+      try {
+        const status = await getRegisterStatus(phone);
+        if (status?.isVerified && status?.isCompleted) {
+          finish('Login');
+        } else if (status?.isVerified) {
+          finish('multiStepProfile');
+        } else {
+          finish('Register');
+        }
+      } catch {
+        // Never leave the splash screen visible indefinitely when the API is down.
+        finish('Login');
       }
-      setHasChecked(true);
-    })();
+    })().catch(() => finish('Login'));
+
+    return () => {
+      cancelled = true;
+    };
   }, [token, isAuthenticated, isAuthLoading]);
 
   return {initialRoute, hasChecked};
