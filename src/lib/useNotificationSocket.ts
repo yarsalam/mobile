@@ -1,7 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useAuth } from '../context/AuthContext';
-import { Platform, Alert } from 'react-native';
 import notifee, { AndroidImportance, EventType } from '@notifee/react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useQueryClient } from '@tanstack/react-query';
@@ -24,9 +23,6 @@ export const useNotificationSocket = () => {
     });
     socketRef.current = socket;
 
-    socket.on('connect', () => {
-    });
-
     socket.on('notification', async (payload: any) => {
       // به‌روزرسانی کش react-query (اگر صفحه لیست باز باشد)
       queryClient.invalidateQueries({ queryKey: ['notifications', user.id] });
@@ -48,7 +44,7 @@ export const useNotificationSocket = () => {
             sound: 'default',
           },
         });
-      } catch (error) {
+      } catch {
         // OS notification delivery can fail when permissions or channels are unavailable.
       }
     });
@@ -60,13 +56,7 @@ export const useNotificationSocket = () => {
       }
     });
 
-    const unsubscribeBackgroundEvent = notifee.onBackgroundEvent(async ({ type, detail }) => {
-      if (type === EventType.PRESS) {
-        // اینجا navigation در دسترس نیست، باید با روش دیگری صفحه را باز کرد
-        // معمولاً از deep link یا ذخیره‌سازی state استفاده می‌کنیم
-        // فعلاً می‌گذاریم بعداً کامل شود
-      }
-    });
+    // Background notification navigation is handled by the app bootstrap/deep-link flow.
 
     return () => {
       socket.disconnect();
