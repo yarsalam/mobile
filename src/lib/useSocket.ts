@@ -1,20 +1,22 @@
-// src/hooks/useSocket.ts
 import {useEffect, useState} from 'react';
 import io, {Socket} from 'socket.io-client';
-import {useAuth} from '../context/AuthContext'; // دسترسی به توکن
+import {useAuth} from '../context/AuthContext';
+import {API_BASE_URL} from '../config/api';
 
 export const useSocket = () => {
-  const {token} = useAuth(); // فرض کن `token` در AuthContext ذخیره شده
+  const {token} = useAuth();
   const [socket, setSocket] = useState<Socket | null>(null);
 
   useEffect(() => {
-    if (!token) return;
-    const s = io('http://192.168.0.133:5001', {
-      auth: {token},
-    });
-    setSocket(s);
+    if (!token) {
+      setSocket(null);
+      return;
+    }
+    const nextSocket = io(API_BASE_URL, {auth: {token}});
+    setSocket(nextSocket);
     return () => {
-      s.disconnect();
+      nextSocket.disconnect();
+      setSocket(current => (current === nextSocket ? null : current));
     };
   }, [token]);
 
