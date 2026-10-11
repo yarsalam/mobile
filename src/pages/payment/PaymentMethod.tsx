@@ -58,13 +58,19 @@ export default function PaymentMethod() {
 
   return (
     <MainLayout>
-      <SectionWithLine text="روش پرداخت" />
+      <SectionWithLine text="شارژ کیف پول" />
       {product ? (
         <GlobalText style={styles.amount}>
-          {product.label} — مبلغ: {amountToman.toLocaleString('fa-IR')} تومان
+          برای خرید «{product.label}»، کیف پول را به مبلغ {amountToman.toLocaleString('fa-IR')} تومان شارژ کنید
         </GlobalText>
       ) : !productsLoading ? (
         <GlobalText style={styles.amount}>محصول فعال پیدا نشد.</GlobalText>
+      ) : null}
+
+      {product && !productsLoading ? (
+        <GlobalText style={{color: theme.colors.text, textAlign: 'center', marginHorizontal: 18, marginBottom: 12}}>
+          این مرحله فقط کیف پول را شارژ می‌کند؛ پس از تأیید پرداخت، بسته را جداگانه از موجودی کیف پول خریداری کنید.
+        </GlobalText>
       ) : null}
 
       {isLoading ? (
