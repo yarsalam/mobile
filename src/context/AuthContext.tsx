@@ -13,6 +13,7 @@ import {fetchWithAuth} from '../lib/fetchWithAuth';
 import {AuthContextType} from '../../types/authContextType';
 import {User} from '../../types/userType';
 import {API_BASE_URL} from '../config/api';
+import {login as loginApi} from '../api/auth/queries/auth';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -103,6 +104,15 @@ export const AuthProvider = ({children}: {children: React.ReactNode}) => {
     [queryClient],
   );
 
+  const login = useCallback(
+    async (credentials: any) => {
+      const response = await loginApi(credentials);
+      if (response?.token) await setToken(response.token);
+      return response;
+    },
+    [setToken],
+  );
+
   const logout = useCallback(async () => {
     await AsyncStorage.removeItem('auth_token');
     await AsyncStorage.removeItem('temp_auth_token');
@@ -113,10 +123,11 @@ export const AuthProvider = ({children}: {children: React.ReactNode}) => {
   return (
     <AuthContext.Provider
       value={{
-        user,
+        user: user ?? null,
         token,
         isAuthenticated,
         isAuthLoading,
+        login,
         setToken,
         logout,
       }}>
