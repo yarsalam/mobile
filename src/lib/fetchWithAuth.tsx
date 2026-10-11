@@ -1,7 +1,14 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {getDeviceHeaders} from './deviceInfo';
+import {API_BASE_URL} from '../config/api';
+
+const resolveApiUrl = (url: string) =>
+  /^https?:\/\//i.test(url)
+    ? url
+    : `${API_BASE_URL}/${url.replace(/^\/+/, '')}`;
 
 export const fetchWithAuth = async (url: string, options: RequestInit = {}) => {
+  const requestUrl = resolveApiUrl(url);
   const method = (options.method || 'GET').toUpperCase();
   const isFormData = options.body instanceof FormData;
 
@@ -16,10 +23,14 @@ export const fetchWithAuth = async (url: string, options: RequestInit = {}) => {
     ...(authToken ? {Authorization: `Bearer ${authToken}`} : {}),
   };
 
-  const response = await fetch(url, {...options, method, headers});
+  // React Native fetch requires absolute URLs; accept relative API paths consistently.
+  // Let fetch set the multipart boundary for FormData requests.
+  if (isFormData) delete headers['Content-Type'];
+
+  const response = await fetch(requestUrl, {...options, method, headers});
 
   if (response.status === 401) {
-    if (url.includes('/auth/me')) {
+    if (requestUrl.includes('/auth/me')) {
       await AsyncStorage.removeItem('auth_token');
       await AsyncStorage.removeItem('temp_auth_token');
     }
