@@ -27,7 +27,7 @@ const TicketDetailScreen = ({route, navigation}: Props) => {
   const {theme} = useTheme();
   const styles = getStyles(theme);
 
-  const {data: ticket, isLoading, refetch} = useTicketDetail(ticketId);
+  const {data: ticket, isLoading} = useTicketDetail(ticketId);
   const addMessageMutation = useAddMessage(ticketId);
   const feedbackMutation = useSubmitFeedback(ticketId);
 
