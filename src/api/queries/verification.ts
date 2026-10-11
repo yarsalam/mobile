@@ -1,17 +1,9 @@
-import {fetchWithAuth} from '../../lib/fetchWithAuth';
-
-export const requestVerification = async (selfieFile: {uri: string; type: string; name: string}) => {
-  const formData = new FormData();
-  formData.append('selfie', {
-    uri: selfieFile.uri,
-    type: selfieFile.type || 'image/jpeg',
-    name: selfieFile.name || 'selfie.jpg',
-  } as any);
-
-  return fetchWithAuth('/verification/request', {
-    method: 'POST',
-    body: formData,
-  });
+// The backend currently exposes face verification only through an admin-guarded
+// route; there is no authenticated user endpoint for requesting or reading status.
+export const requestVerification = async (_selfieFile: {uri: string; type: string; name: string}): Promise<never> => {
+  throw new Error('درخواست تأیید چهره از سمت API کاربر هنوز پیاده‌سازی نشده است.');
 };
 
-export const getVerificationStatus = () => fetchWithAuth('/verification/status');
+export const getVerificationStatus = async (): Promise<never> => {
+  throw new Error('دریافت وضعیت تأیید چهره از API کاربر هنوز پیاده‌سازی نشده است.');
+};
