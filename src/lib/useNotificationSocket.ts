@@ -1,15 +1,14 @@
-import { useEffect, useRef } from 'react';
-import { io, Socket } from 'socket.io-client';
-import { useAuth } from '../context/AuthContext';
-import { Platform, Alert } from 'react-native';
-import notifee, { AndroidImportance, EventType } from '@notifee/react-native';
-import { useNavigation } from '@react-navigation/native';
-import { useQueryClient } from '@tanstack/react-query';
-
-const NOTIFICATION_SOCKET_URL = 'http://192.168.0.133:5001/notification'; // namespace
+import {useEffect, useRef} from 'react';
+import {io, Socket} from 'socket.io-client';
+import {useAuth} from '../context/AuthContext';
+import {Platform, Alert} from 'react-native';
+import notifee, {AndroidImportance, EventType} from '@notifee/react-native';
+import {useNavigation} from '@react-navigation/native';
+import {useQueryClient} from '@tanstack/react-query';
+import {API_BASE_URL} from '../config/api';
 
 export const useNotificationSocket = () => {
-  const { token, user } = useAuth();
+  const {token, user} = useAuth();
   const socketRef = useRef<Socket | null>(null);
   const navigation = useNavigation<any>();
   const queryClient = useQueryClient();
@@ -17,73 +16,58 @@ export const useNotificationSocket = () => {
   useEffect(() => {
     if (!token || !user) return;
 
-    const socket = io(NOTIFICATION_SOCKET_URL, {
-      auth: { token },
+    const socketUrl = API_BASE_URL.replace(/\/$/, '') + '/notification';
+    const socket = io(socketUrl, {
+      auth: {token},
       transports: ['websocket'],
     });
     socketRef.current = socket;
 
-    socket.on('connect', () => {
-      console.log('Notification socket connected');
-    });
-
     socket.on('notification', async (payload: any) => {
-      console.log('New notification:', payload);
-      // به‌روزرسانی کش react-query (اگر صفحه لیست باز باشد)
-      queryClient.invalidateQueries({ queryKey: ['notifications', user.id] });
-      queryClient.invalidateQueries({ queryKey: ['unread-notifications', user.id] });
-
-      // نمایش نوتیفیکیشن محلی
+      queryClient.invalidateQueries({queryKey: ['notifications', user.id]});
+      queryClient.invalidateQueries({queryKey: ['unread-notifications', user.id]});
       try {
         await notifee.displayNotification({
           title: payload.type === 'message' ? 'پیام جدید' : 'بازدید جدید',
           body: payload.message,
-          data: { ...payload, screen: payload.type === 'message' ? 'Chat' : 'UserProfile' },
+          data: {...payload, screen: payload.type === 'message' ? 'Chat' : 'UserProfile'},
           android: {
             channelId: 'default',
             importance: AndroidImportance.HIGH,
-            smallIcon: 'ic_notification', // باید در مسیر mipmap تعریف شود
-            pressAction: { id: 'default' },
+            smallIcon: 'ic_notification',
+            pressAction: {id: 'default'},
           },
-          ios: {
-            sound: 'default',
-          },
+          ios: {sound: 'default'},
         });
-      } catch (error) {
-        console.log('Local notification error:', error);
+      } catch {
+        // Notification display can fail when the OS permission/channel is unavailable.
       }
     });
 
-    // مدیریت کلیک روی نوتیفیکیشن وقتی اپ باز است یا از پس‌زمینه می‌آید
-    const unsubscribeForegroundEvent = notifee.onForegroundEvent(({ type, detail }) => {
-      if (type === EventType.PRESS) {
-        handleNotificationPress(detail.notification?.data);
-      }
+    const unsubscribeForegroundEvent = notifee.onForegroundEvent(({type, detail}) => {
+      if (type === EventType.PRESS) handleNotificationPress(detail.notification?.data);
     });
-
-    const unsubscribeBackgroundEvent = notifee.onBackgroundEvent(async ({ type, detail }) => {
-      if (type === EventType.PRESS) {
-        // اینجا navigation در دسترس نیست، باید با روش دیگری صفحه را باز کرد
-        // معمولاً از deep link یا ذخیره‌سازی state استفاده می‌کنیم
-        // فعلاً می‌گذاریم بعداً کامل شود
-      }
+    const unsubscribeBackgroundEvent = notifee.onBackgroundEvent(async () => {
+      // Background navigation must be handled by the app's deep-link/bootstrap flow.
     });
 
     return () => {
+      socket.removeAllListeners();
       socket.disconnect();
       unsubscribeForegroundEvent();
-      // background event نیازی به پاک‌سازی ندارد
+      void unsubscribeBackgroundEvent;
+      socketRef.current = null;
     };
-  }, [token, user]);
+  }, [token, user?.id, queryClient]);
 
   const handleNotificationPress = (data: any) => {
     if (!data) return;
     if (data.screen === 'Chat') {
-      navigation.navigate('Chat', { userId: data.related_id, nickname: data.message });
+      navigation.navigate('Chat', {userId: data.related_id, nickname: data.message});
     } else if (data.screen === 'UserProfile') {
-      navigation.navigate('UserProfile', { user: data.related_id });
+      navigation.navigate('UserProfile', {userId: data.related_id});
     }
   };
 
-  return null;
+  return socketRef;
 };
