@@ -14,7 +14,6 @@ import GlobalText from '../../components/GlobalText';
 import {useTheme} from '../../context/MainContext';
 import {useAuth} from '../../context/AuthContext';
 import {useAddMessage} from '../../api/mutations/tickets/useAddMessage';
-import {useResolveTicket} from '../../api/mutations/tickets/useResolveTicket';
 import {useSubmitFeedback} from '../../api/mutations/tickets/useSubmitFeedback';
 import {useTicketDetail} from '../../api/mutations/tickets/useTicketDetail';
 import {RootStackParamList} from '../../../types/rootStackParamList';
@@ -30,11 +29,9 @@ const TicketDetailScreen = ({route, navigation}: Props) => {
 
   const {data: ticket, isLoading, refetch} = useTicketDetail(ticketId);
   const addMessageMutation = useAddMessage(ticketId);
-  const resolveMutation = useResolveTicket(ticketId);
   const feedbackMutation = useSubmitFeedback(ticketId);
 
   const [messageText, setMessageText] = useState('');
-  const [modalResolve, setModalResolve] = useState(false);
   const [modalFeedback, setModalFeedback] = useState(false);
 
   const handleSend = () => {
@@ -42,11 +39,6 @@ const TicketDetailScreen = ({route, navigation}: Props) => {
     addMessageMutation.mutate(messageText, {
       onSuccess: () => setMessageText(''),
     });
-  };
-
-  const handleResolve = () => {
-    setModalResolve(false);
-    resolveMutation.mutate('حل شده توسط کاربر');
   };
 
   const handleFeedback = (rating: number) => {
@@ -164,13 +156,6 @@ const TicketDetailScreen = ({route, navigation}: Props) => {
 
       {/* دکمه‌های عملیاتی */}
       <View style={styles.actions}>
-        {ticket.status === 'open' || ticket.status === 'in_progress' ? (
-          <TouchableOpacity
-            onPress={() => setModalResolve(true)}
-            style={[styles.actionBtn, {backgroundColor: '#5cb85c'}]}>
-            <GlobalText style={{color: '#fff'}}>رفع مشکل</GlobalText>
-          </TouchableOpacity>
-        ) : null}
         {ticket.status === 'resolved' && !ticket.feedback && (
           <TouchableOpacity
             onPress={() => setModalFeedback(true)}
@@ -179,36 +164,6 @@ const TicketDetailScreen = ({route, navigation}: Props) => {
           </TouchableOpacity>
         )}
       </View>
-
-      {/* مودال تأیید حل مشکل */}
-      <Modal visible={modalResolve} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
-          <View
-            style={[styles.modalCard, {backgroundColor: theme.colors.card + 'CC'}]}>
-            <GlobalText style={[styles.modalTitle, {color: theme.colors.text}]}>
-              تأیید حل شدن
-            </GlobalText>
-            <GlobalText style={[styles.modalDesc, {color: theme.colors.text}]}>
-              آیا مطمئن هستید مشکل حل شده است؟
-            </GlobalText>
-            <View style={styles.modalActions}>
-              <TouchableOpacity
-                onPress={() => setModalResolve(false)}
-                style={[
-                  styles.modalBtn,
-                  {backgroundColor: theme.colors.border},
-                ]}>
-                <GlobalText style={{color: theme.colors.text}}>خیر</GlobalText>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={handleResolve}
-                style={[styles.modalBtn, {backgroundColor: '#5cb85c'}]}>
-                <GlobalText style={{color: '#fff'}}>بله</GlobalText>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
 
       {/* مودال امتیازدهی */}
       <Modal visible={modalFeedback} transparent animationType="fade">
