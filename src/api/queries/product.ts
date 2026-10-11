@@ -1,14 +1,11 @@
-import { fetchWithAuth } from '../../lib/fetchWithAuth';
+import {fetchWithAuth} from '../../lib/fetchWithAuth';
 
-const BASE = 'http://192.168.0.133:5001';
+// Active bundles are read from ProductBundle by the backend.
+export const fetchPublicProducts = () => fetchWithAuth('/product/public');
 
-// دریافت محصولات عمومی (Boost, Credit, VIP)
-export const fetchPublicProducts = () =>
-  fetchWithAuth(`${BASE}/product/public`);
-
-// شروع یک پرداخت برای یک محصول خاص
-export const startPayment = (productId: string) =>
-  fetchWithAuth(`${BASE}/payments/start`, {
+// Purchases are made with wallet balance through POST /payments/buy/:bundleCode.
+// This function deliberately accepts a bundle code (not a database product ID).
+export const buyProductWithWallet = (bundleCode: string) =>
+  fetchWithAuth(`/payments/buy/${encodeURIComponent(bundleCode)}`, {
     method: 'POST',
-    body: JSON.stringify({ productId }),
   });
