@@ -17,8 +17,8 @@ import CardPaymentSheet from '../../components/CardPaymentSheet/CardPaymentSheet
 import CryptoPaymentSheet from '../../components/CardPaymentSheet/CryptoPaymentSheet';
 
 
-// نگاشت productId → قیمت
-// بعداً این را از /product/public بخوان
+// Legacy productId-to-price mapping. Keep aligned with backend bundle prices;
+// the backend deposit endpoints accept amountRials and handle crypto conversion.
 const PRODUCT_PRICES: Record<string, { rials: number; cents: number; code: string }> = {
   boost_1:        { rials: 19000,  cents: 100, code: 'boost_1' },
   boost_5:        { rials: 89000,  cents: 500, code: 'boost_5' },
@@ -60,15 +60,13 @@ export default function PaymentMethod() {
     try {
       if (selected === 'card') {
         const result = await cardMutation.mutateAsync({
-          productCode: pricing.code,
           amountRials: pricing.rials,
         });
         // نتیجه را به Sheet پاس می‌دهیم — state محلی
         setCardResult(result);
       } else {
         const result = await cryptoMutation.mutateAsync({
-          productCode: pricing.code,
-          amountCents: pricing.cents,
+          amountRials: pricing.rials,
         });
         setCryptoResult(result);
       }
