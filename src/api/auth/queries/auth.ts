@@ -5,151 +5,113 @@ import {
   verifyTelegramCodeSchema,
 } from '../../../schemas/authSchemas';
 import {z} from 'zod';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import {fetchWithAuth} from '../../../lib/fetchWithAuth';
 import {getDeviceHeaders} from '../../../lib/deviceInfo';
+import {API_BASE_URL} from '../../../config/api';
 
-const API_BASE = 'http://192.168.0.133:5001';
-
-// ─── Helper بدون auth (برای مراحل ثبت‌نام) ────────────────────────────────
-
-async function publicFetch(url: string, options: any = {}) {
+// Public requests still send device headers: registration verification uses them
+// to bind verification to the device that initiated the flow.
+async function publicFetch(url: string, options: RequestInit = {}) {
   const deviceHeaders = await getDeviceHeaders();
+  const headers = new Headers(options.headers);
 
-  const res = await fetch(url, {
-    headers: {
-      'Content-Type': 'application/json',
-      ...deviceHeaders,
-      ...(options.headers || {}),
-    },
-    ...options,
-  });
+  if (!(options.body instanceof FormData) && !headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json');
+  }
+  Object.entries(deviceHeaders).forEach(([key, value]) => headers.set(key, value));
 
-  const data = await res.json();
+  const res = await fetch(url, {...options, headers});
+  const raw = await res.text();
+  let data: any = null;
+
+  try {
+    data = raw ? JSON.parse(raw) : null;
+  } catch {
+    if (!res.ok) throw {message: 'خطا در ارتباط با سرور', code: null};
+    return raw;
+  }
 
   if (!res.ok) {
-    throw {message: data.message || 'REQUEST_FAILED', code: data.code || null};
+    throw {
+      message: data?.message || 'REQUEST_FAILED',
+      code: data?.code || null,
+      status: res.status,
+    };
   }
 
   return data;
 }
 
-// ─── مراحل ثبت‌نام (بدون auth) ──────────────────────────────────────────────
-
-export const registerStep1 = async (
+export const registerStep1 = (
   data: z.infer<typeof registerStep1Schema>,
 ) => {
-  console.log('data', data);
-  return publicFetch(`${API_BASE}/auth/register/step1`, {
+  return publicFetch(`${API_BASE_URL}/auth/register/step1`, {
     method: 'POST',
     body: JSON.stringify(data),
   });
 };
 
-export const saveWhatsAppOtp = async (data: {phone: string; otp: string}) => {
-  return publicFetch(`${API_BASE}/auth/register/whatsapp/save-otp`, {
+export const saveWhatsAppOtp = (data: {phone: string; otp: string}) => {
+  return publicFetch(`${API_BASE_URL}/auth/register/whatsapp/save-otp`, {
     method: 'POST',
     body: JSON.stringify(data),
   });
 };
 
-export const verifyWhatsApp = async (phone: string | null) => {
-  return publicFetch(`${API_BASE}/auth/register/whatsapp/verify`, {
+export const verifyWhatsApp = (phone: string | null) => {
+  return publicFetch(`${API_BASE_URL}/auth/register/whatsapp/verify`, {
     method: 'POST',
     body: JSON.stringify({phone}),
   });
 };
 
-export const completeVerification = async (phone: string | null) => {
-  const res = await publicFetch(
-    `${API_BASE}/auth/register/complete-verification`,
-    {
-      method: 'POST',
-      body: JSON.stringify({phone}),
-    },
-  );
-
-  console.log('res', res);
-
-  return res;
+export const completeVerification = (phone: string | null) => {
+  return publicFetch(`${API_BASE_URL}/auth/register/complete-verification`, {
+    method: 'POST',
+    body: JSON.stringify({phone}),
+  });
 };
 
 export const verifyTelegramCode = (
   data: z.infer<typeof verifyTelegramCodeSchema>,
 ) => {
-  return publicFetch(`${API_BASE}/telegram/webhook/verify`, {
+  return publicFetch(`${API_BASE_URL}/telegram/webhook/verify`, {
     method: 'POST',
     body: JSON.stringify(data),
   });
 };
 
-export const getRegisterStatus = async (phone: string) => {
+export const getRegisterStatus = (phone: string) => {
   return publicFetch(
-    `${API_BASE}/auth/mobile/register-status?phone=${encodeURIComponent(
-      phone,
-    )}`,
+    `${API_BASE_URL}/auth/mobile/register-status?phone=${encodeURIComponent(phone)}`,
   );
 };
 
-// ─── مراحل لاگین (با auth) ──────────────────────────────────────────────────
-
-export const login = async (data: z.infer<typeof loginSchema>) => {
-  const res = await fetch(`${API_BASE}/auth/login`, {
+export const login = (data: z.infer<typeof loginSchema>) => {
+  return publicFetch(`${API_BASE_URL}/auth/login`, {
     method: 'POST',
-    headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({...data, platform: 'mobile'}),
   });
-
-  const responseData = await res.json();
-
-  if (!res.ok) {
-    throw {
-      message: responseData.message || 'خطا ناشناخته',
-      code: responseData.code || 'UNKNOWN_ERROR',
-    };
-  }
-
-  return responseData;
 };
 
-export const getCurrentUser = async () => {
-  const token = await AsyncStorage.getItem('auth_token');
-  if (!token) throw new Error('NO_TOKEN');
-
-  const res = await fetch(`${API_BASE}/auth/me`, {
-    headers: {Authorization: `Bearer ${token}`},
-  });
-
-  if (res.status === 401) {
-    await AsyncStorage.removeItem('auth_token');
-    throw new Error('UNAUTHORIZED');
-  }
-
-  if (!res.ok) throw new Error('SERVER_ERROR');
-
-  return res.json();
+export const getCurrentUser = () => {
+  return fetchWithAuth(`${API_BASE_URL}/auth/me`);
 };
 
-export const multiStepProfile = async (data: MultiStepProfilePayload) => {
-  console.log('data', data);
-  return fetchWithAuth(`${API_BASE}/auth/register/completeProfile`, {
+export const multiStepProfile = (data: MultiStepProfilePayload) => {
+  return fetchWithAuth(`${API_BASE_URL}/auth/register/completeProfile`, {
     method: 'POST',
     body: JSON.stringify(data),
   });
 };
 
-export const logoutApi = async () => {
-  return fetchWithAuth(`${API_BASE}/auth/logout`, {
+export const logoutApi = () => {
+  return fetchWithAuth(`${API_BASE_URL}/auth/logout`, {
     method: 'POST',
     body: JSON.stringify({platform: 'mobile'}),
   });
 };
 
-export const getAllUsers = async () => {
-  const token = await AsyncStorage.getItem('auth_token');
-  const res = await fetch(`${API_BASE}/users/all`, {
-    headers: {Authorization: `Bearer ${token}`},
-  });
-  if (!res.ok) throw new Error('خطا در دریافت کاربران');
-  return res.json();
+export const getAllUsers = () => {
+  return fetchWithAuth(`${API_BASE_URL}/users/all`);
 };
