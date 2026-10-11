@@ -1,16 +1,14 @@
 import {useQuery} from '@tanstack/react-query';
 import {fetchWithAuth} from '../../lib/fetchWithAuth';
 
-const BASE = 'http://192.168.0.133:5001';
-
 export interface WalletData {
-  balance: number; // ریال خام
-  balanceDisplay: string; // تومان با فرمت فارسی
+  balance: number; // raw rials
+  balanceDisplay: string; // toman, Persian formatting
   currency: 'IRT';
 }
 
 async function fetchWallet(): Promise<WalletData> {
-  const res = await fetchWithAuth(`${BASE}/payments/wallet`);
+  const res = await fetchWithAuth('/payments/wallet');
   if (res?.data) return res.data;
   return res;
 }
