@@ -1,9 +1,8 @@
-import { useQuery } from '@tanstack/react-query';
-import { fetchUserTickets } from '../../queries/tickets';
+import {useQuery} from '@tanstack/react-query';
+import {fetchUserTickets} from '../../queries/tickets';
 
-export const useTicketsList = (userId: number | undefined) =>
+export const useTicketsList = () =>
   useQuery({
-    queryKey: ['tickets', userId],
-    queryFn: () => fetchUserTickets(userId!),
-    enabled: !!userId,
+    queryKey: ['tickets'],
+    queryFn: fetchUserTickets,
   });
