@@ -1,4 +1,4 @@
-import React, {createContext, useEffect, useState} from 'react';
+import React, {createContext, useEffect, useRef, useState} from 'react';
 import {AppState, AppStateStatus} from 'react-native';
 import {io, Socket} from 'socket.io-client';
 import {useAuth} from './AuthContext';
@@ -20,10 +20,12 @@ export const NotificationSocketProvider = ({
   const queryClient = useQueryClient();
   const {showToast} = useToast();
   const [socket, setSocket] = useState<Socket | null>(null);
-  const [appState, setAppState] = useState<AppStateStatus>(AppState.currentState);
+  const appStateRef = useRef<AppStateStatus>(AppState.currentState);
 
   useEffect(() => {
-    const subscription = AppState.addEventListener('change', setAppState);
+    const subscription = AppState.addEventListener('change', nextState => {
+      appStateRef.current = nextState;
+    });
     return () => subscription.remove();
   }, []);
 
@@ -55,7 +57,7 @@ export const NotificationSocketProvider = ({
       ]);
 
       const message = notif?.message || 'اعلان جدید دریافت شد';
-      if (appState === 'active') {
+      if (appStateRef.current === 'active') {
         showToast(message, 'info', undefined, notif?.type);
       } else {
         await notifee.displayNotification({
@@ -75,7 +77,7 @@ export const NotificationSocketProvider = ({
       newSocket.disconnect();
       setSocket(current => (current === newSocket ? null : current));
     };
-  }, [user?.id, token, queryClient, showToast, appState]);
+  }, [user?.id, token, queryClient, showToast]);
 
   return (
     <NotificationSocketContext.Provider value={{socket}}>
