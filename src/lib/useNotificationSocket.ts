@@ -5,8 +5,9 @@ import { Platform, Alert } from 'react-native';
 import notifee, { AndroidImportance, EventType } from '@notifee/react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useQueryClient } from '@tanstack/react-query';
+import {API_BASE_URL} from '../config/api';
 
-const NOTIFICATION_SOCKET_URL = 'http://192.168.0.133:5001/notification'; // namespace
+const NOTIFICATION_SOCKET_URL = API_BASE_URL.replace(/\/$/, '') + '/notification';
 
 export const useNotificationSocket = () => {
   const { token, user } = useAuth();
@@ -24,11 +25,9 @@ export const useNotificationSocket = () => {
     socketRef.current = socket;
 
     socket.on('connect', () => {
-      console.log('Notification socket connected');
     });
 
     socket.on('notification', async (payload: any) => {
-      console.log('New notification:', payload);
       // به‌روزرسانی کش react-query (اگر صفحه لیست باز باشد)
       queryClient.invalidateQueries({ queryKey: ['notifications', user.id] });
       queryClient.invalidateQueries({ queryKey: ['unread-notifications', user.id] });
@@ -50,7 +49,7 @@ export const useNotificationSocket = () => {
           },
         });
       } catch (error) {
-        console.log('Local notification error:', error);
+        // OS notification delivery can fail when permissions or channels are unavailable.
       }
     });
 

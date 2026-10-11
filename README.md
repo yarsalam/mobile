@@ -1,97 +1,86 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# یارسلام — اپلیکیشن موبایل
 
-# Getting Started
+کلاینت موبایل یارسلام با React Native و TypeScript ساخته شده است.
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+## نیازمندی‌ها
 
-## Step 1: Start Metro
+- Node.js مطابق نسخه تعریف‌شده در `package.json` (حداقل 22.11)
+- Android Studio و Android SDK برای اجرای اندروید
+- Xcode و CocoaPods برای اجرای iOS روی macOS
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+## تنظیم آدرس بک‌اند
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+آدرس API در یک محل متمرکز تعریف شده است:
 
-```sh
-# Using npm
+`src/config/api.ts`
+
+مقدار آن باید با آدرس قابل‌دسترسی بک‌اند در دستگاه یا شبیه‌ساز هماهنگ باشد. در تنظیم فعلی توسعه، آدرس `http://192.168.0.133:5001` استفاده می‌شود؛ این آدرس برای شبکه محلی توسعه است، نه انتشار عمومی. پیش از انتشار، آن را با دامنه HTTPS محیط production جایگزین کن.
+
+- شبیه‌ساز Android: از آدرسی استفاده کن که از خود شبیه‌ساز به بک‌اند دسترسی داشته باشد.
+- گوشی فیزیکی: گوشی و کامپیوتر/سرور توسعه باید مسیر شبکه قابل‌دسترسی داشته باشند.
+- Production: فقط HTTPS و دامنه عمومی API را استفاده کن.
+
+## نصب و اجرا
+
+```bash
+npm install
 npm start
-
-# OR using Yarn
-yarn start
 ```
 
-## Step 2: Build and run your app
+در ترمینال جداگانه:
 
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
-
-### Android
-
-```sh
-# Using npm
+```bash
 npm run android
-
-# OR using Yarn
-yarn android
 ```
 
-### iOS
+برای iOS روی macOS:
 
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
-
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
-
-```sh
-bundle install
-```
-
-Then, and every time you update your native dependencies, run:
-
-```sh
+```bash
+cd ios
 bundle exec pod install
-```
-
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
-
-```sh
-# Using npm
+cd ..
 npm run ios
-
-# OR using Yarn
-yarn ios
 ```
 
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
+## بررسی کد
 
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
+```bash
+npm run lint
+npm test -- --runInBand
+```
 
-## Step 3: Modify your app
+## نکات مربوط به اتصال API
 
-Now that you have successfully run the app, let's make changes!
+- درخواست‌های احراز هویت از helper مشترک `src/lib/fetchWithAuth.tsx` استفاده می‌کنند.
+- درخواست‌های عمومی ثبت‌نام نیز هدرهای اطلاعات دستگاه را ارسال می‌کنند؛ بک‌اند برای برخی مراحل تأیید به شناسه دستگاه نیاز دارد.
+- توکن موقت ثبت‌نام با توکن دائمی کاربر متفاوت است؛ endpoint مربوط به `/auth/me` فقط برای نشست دائمی مناسب است.
+- اگر API در دسترس نباشد، تشخیص مسیر اولیه نباید صفحه بارگذاری را برای همیشه باز نگه دارد.
 
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
+## وضعیت اعتبارسنجی
 
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
+تغییرات این شاخه از طریق GitHub اعمال شده‌اند، اما در این محیط امکان اجرای نصب وابستگی‌ها، TypeScript، lint یا تست‌های React Native فراهم نشد. پیش از ادغام، این بررسی‌ها را در محیط توسعه اجرا کن و خطاهای باقی‌مانده را بر اساس خروجی واقعی اصلاح کن.
 
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
 
-## Congratulations! :tada:
+## ممیزی قرارداد فرانت موبایل و بک‌اند
 
-You've successfully run and modified your React Native App. :partying_face:
+- درخواست‌های fetchWithAuth می‌توانند مسیر نسبی بگیرند؛ بنابراین آدرس API در فایل‌های اصلی API، تصویر و Socket.IO از تنظیم مشترک استفاده می‌کند.
+- پرداخت کارت و رمزارز از POST /payments/deposit/card و POST /payments/deposit/crypto با بدنه { amountRials } استفاده می‌کند. قیمت محصول از GET /product/public خوانده می‌شود و از قیمت‌های ثابت داخل اپ استفاده نمی‌شود.
+- خرید بسته با کیف پول از POST /payments/buy/:bundleCode انجام می‌شود.
+- فهرست تیکت‌های کاربر از GET /tickets/me می‌آید؛ شناسهٔ کاربر از JWT استخراج می‌شود.
+- گزارش، مسدودسازی و رفع مسدودسازی مطابق قرارداد بک‌اند فقط اطلاعات هدف را می‌فرستند؛ شناسهٔ کاربر اجراکننده از JWT گرفته می‌شود.
+- داده‌های ساختگی تاریخچهٔ تراکنش‌ها حذف شده‌اند؛ تا زمانی که بک‌اند endpoint تاریخچهٔ تراکنش‌های کاربر را ارائه نکند، اپ نباید تراکنش ساختگی نمایش دهد.
+- عملیات «بستن تیکت» از رابط کاربر حذف شده چون در کنترلر فعلی بک‌اند endpoint متناظری ندارد.
 
-### Now what?
+### شکاف‌های باقی‌مانده در بک‌اند
 
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
+این موارد با تغییر صرف فرانت‌اند قابل حل نیستند و به endpoint کاربر در بک‌اند نیاز دارند:
 
-# Troubleshooting
+- تاریخچهٔ تراکنش‌های مالی کاربر.
+- درخواست تأیید چهره و دریافت وضعیت آن برای کاربر؛ مسیر فعلی تأیید چهره در کنترلر ادمین و محافظت‌شده با AdminApiGuard است.
+- فهرست پروفایل‌هایی که کاربر بازدید کرده است؛ بک‌اند فعلاً فقط بازدیدکنندگان پروفایل کاربر را برمی‌گرداند.
+- اعطای بوست رایگان از مسیر کاربر؛ مسیر موجود با AdminApiGuard محافظت شده است.
+- بستن/حل تیکت توسط کاربر.
 
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
+## وضعیت آزمون
 
-# Learn More
-
-To learn more about React Native, take a look at the following resources:
-
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+این تغییرات از طریق GitHub ثبت شده‌اند. در این محیط نصب وابستگی‌ها و اجرای TypeScript، ESLint، Jest یا build اندروید انجام نشده است؛ بنابراین این موارد هنوز تأییدشده محسوب نمی‌شوند. قبل از ادغام، اجرای npm install، npm run lint، npm test -- --runInBand و build اندروید در محیط توسعه ضروری است.

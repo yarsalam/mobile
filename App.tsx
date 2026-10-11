@@ -14,72 +14,82 @@ import {useEffect} from 'react';
 import notifee, {AndroidImportance} from '@notifee/react-native';
 import BackgroundFetch from 'react-native-background-fetch';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import {API_BASE_URL} from './src/config/api';
+import {getDeviceHeaders} from './src/lib/deviceInfo';
 
 const queryClient = new QueryClient();
 
-// ✅ خارج از component — هم App هم HeadlessTask استفاده می‌کنن
 async function checkNotifications() {
   try {
     const token = await AsyncStorage.getItem('auth_token');
     if (!token) return;
 
-    const res = await fetch('http://192.168.0.133:5001/notifications/pending', {
-      headers: {Authorization: `Bearer ${token}`},
+    const deviceHeaders = await getDeviceHeaders();
+    const res = await fetch(`${API_BASE_URL}/notifications/pending`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        ...deviceHeaders,
+      },
     });
 
+    if (!res.ok) return;
+
     const data = await res.json();
+    if (!data?.hasUnread) return;
 
-    if (data.hasUnread) {
-      await notifee.createChannel({
-        id: 'default_channel_v2',
-        name: 'نوتیفیکیشن‌های یارسلام',
-        importance: AndroidImportance.HIGH,
-      });
+    await notifee.createChannel({
+      id: 'default_channel_v2',
+      name: 'نوتیفیکیشن‌های یارسلام',
+      importance: AndroidImportance.HIGH,
+    });
 
-      await notifee.displayNotification({
-        title: 'یارسلام',
-        body: `${data.count} پیام جدید دارید`,
-        android: {
-          channelId: 'default_channel_v2',
-          pressAction: {id: 'default'},
-        },
-      });
-    }
-  } catch (e) {
-    console.log('[checkNotifications] error:', e);
+    await notifee.displayNotification({
+      title: 'یارسلام',
+      body: `${Number(data.count) || 0} پیام جدید دارید`,
+      android: {
+        channelId: 'default_channel_v2',
+        pressAction: {id: 'default'},
+      },
+    });
+  } catch (error) {
+    // Background checks should not crash app startup.
+    if (__DEV__) console.warn('[checkNotifications] request failed');
   }
 }
 
 const App = () => {
   useEffect(() => {
     async function init() {
-      const settings = await notifee.requestPermission();
-      console.log('Permission status:', settings.authorizationStatus);
+      try {
+        await notifee.requestPermission();
+        await notifee.createChannel({
+          id: 'default_channel_v2',
+          name: 'نوتیفیکیشن‌های یارسلام',
+          importance: AndroidImportance.HIGH,
+        });
 
-      await notifee.createChannel({
-        id: 'default_channel_v2',
-        name: 'نوتیفیکیشن‌های یارسلام',
-        importance: AndroidImportance.HIGH,
-      });
-
-      // ✅ ثبت BackgroundFetch
-      BackgroundFetch.configure(
-        {
-          minimumFetchInterval: 1,
-          stopOnTerminate: false, // بعد از kill هم ادامه بده
-          startOnBoot: true,      // بعد از reboot شروع کن
-          enableHeadless: true,   // حالت killed فعال
-          requiredNetworkType: BackgroundFetch.NETWORK_TYPE_ANY,
-        },
-        async taskId => {
-          // حالت foreground/background
-          await checkNotifications();
-          BackgroundFetch.finish(taskId);
-        },
-        error => {
-          console.log('[BackgroundFetch] configure error:', error);
-        },
-      );
+        BackgroundFetch.configure(
+          {
+            minimumFetchInterval: 15,
+            stopOnTerminate: false,
+            startOnBoot: true,
+            enableHeadless: true,
+            requiredNetworkType: BackgroundFetch.NETWORK_TYPE_ANY,
+          },
+          async taskId => {
+            try {
+              await checkNotifications();
+            } finally {
+              BackgroundFetch.finish(taskId);
+            }
+          },
+          error => {
+            if (__DEV__) console.warn('[BackgroundFetch] configuration failed', error);
+          },
+        );
+      } catch (error) {
+        if (__DEV__) console.warn('[BackgroundFetch] initialization failed', error);
+      }
     }
 
     init();

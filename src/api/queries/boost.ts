@@ -1,7 +1,5 @@
-import { fetchWithAuth } from '../../lib/fetchWithAuth';
-
-export const grantFreeBoost = async (userId: number) => {
-  return fetchWithAuth(`http://192.168.0.133:5001/boost/grant-free/${userId}`, {
-    method: 'POST',
-  });
+// The only current backend route for granting a free boost is protected by
+// AdminApiGuard. The mobile app must not call an admin-only endpoint.
+export const grantFreeBoost = async (_userId: number): Promise<never> => {
+  throw new Error('فعال‌سازی بوست رایگان از API کاربر پشتیبانی نمی‌شود.');
 };

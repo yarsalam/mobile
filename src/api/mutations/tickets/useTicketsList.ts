@@ -1,9 +1,9 @@
-import { useQuery } from '@tanstack/react-query';
-import { fetchUserTickets } from '../../queries/tickets';
+import {useQuery} from '@tanstack/react-query';
+import {fetchUserTickets} from '../../queries/tickets';
 
-export const useTicketsList = (userId: number | undefined) =>
+// Keep the optional parameter for existing callers; the backend uses JWT identity.
+export const useTicketsList = (_userId?: number) =>
   useQuery({
-    queryKey: ['tickets', userId],
-    queryFn: () => fetchUserTickets(userId!),
-    enabled: !!userId,
+    queryKey: ['tickets'],
+    queryFn: fetchUserTickets,
   });

@@ -4,37 +4,33 @@ import GlobalText from './GlobalText';
 import {useTheme} from '../context/MainContext';
 
 export default function TransactionList() {
-  const {data, isLoading} = useTransactions();
-
+  const {data, isLoading, isError} = useTransactions();
   const {theme} = useTheme();
   const styles = getStyles(theme);
   const color = theme.colors.text;
 
   if (isLoading) return <Text>در حال بارگذاری...</Text>;
+  if (isError) {
+    return (
+      <GlobalText style={{color, textAlign: 'center', margin: 20}}>
+        تاریخچه تراکنش‌ها هنوز از سمت سرور ارائه نمی‌شود.
+      </GlobalText>
+    );
+  }
 
   return (
     <View style={styles.container}>
       <FlatList
-        data={data}
+        data={data ?? []}
         keyExtractor={item => item.trackingCode}
         contentContainerStyle={styles.listContent}
         renderItem={({item}) => (
           <View style={styles.item}>
-            <GlobalText style={{color: color}}>
-              محصول: {item.product}
-            </GlobalText>
-            <GlobalText style={{color: color}}>
-              مبلغ: {item.amount.toLocaleString()} تومان
-            </GlobalText>
-            <GlobalText style={{color: color}}>
-              نوع پرداخت: {item.paymentType}
-            </GlobalText>
-            <GlobalText style={{color: color}}>
-              تاریخ: {item.paymentDate}
-            </GlobalText>
-            <GlobalText style={{color: color}}>
-              وضعیت: {item.status === 'success' ? 'موفق' : 'ناموفق'}
-            </GlobalText>
+            <GlobalText style={{color}}>محصول: {item.product}</GlobalText>
+            <GlobalText style={{color}}>مبلغ: {item.amount.toLocaleString()} تومان</GlobalText>
+            <GlobalText style={{color}}>نوع پرداخت: {item.paymentType}</GlobalText>
+            <GlobalText style={{color}}>تاریخ: {item.paymentDate}</GlobalText>
+            <GlobalText style={{color}}>وضعیت: {item.status === 'success' ? 'موفق' : 'ناموفق'}</GlobalText>
           </View>
         )}
       />
@@ -44,12 +40,8 @@ export default function TransactionList() {
 
 const getStyles = (theme: any) =>
   StyleSheet.create({
-    container: {
-      padding: 10,
-    },
-    listContent: {
-      paddingBottom: 20,
-    },
+    container: {padding: 10},
+    listContent: {paddingBottom: 20},
     item: {
       padding: 12,
       borderBottomWidth: 1,

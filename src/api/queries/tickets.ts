@@ -1,48 +1,35 @@
-import { fetchWithAuth } from '../../lib/fetchWithAuth';
+import {fetchWithAuth} from '../../lib/fetchWithAuth';
 
-const BASE = 'http://192.168.0.133:5001';
+// User-scoped route: backend derives the user ID from the JWT.
+export const fetchUserTickets = () => fetchWithAuth('/tickets/me');
 
-// گرفتن لیست تیکت‌های کاربر
-export const fetchUserTickets = (userId: number) =>
-  fetchWithAuth(`${BASE}/tickets/user/${userId}`);
-
-// گرفتن جزئیات یک تیکت (همراه با پیام‌ها)
 export const fetchTicketDetail = (ticketId: number) =>
-  fetchWithAuth(`${BASE}/tickets/${ticketId}`);
+  fetchWithAuth(`/tickets/${ticketId}`);
 
-// ایجاد تیکت جدید
 export const createTicket = (data: {
   title: string;
   description: string;
   category?: string;
-  metadata?: any;
+  metadata?: Record<string, unknown>;
 }) =>
-  fetchWithAuth(`${BASE}/tickets`, {
+  fetchWithAuth('/tickets', {
     method: 'POST',
     body: JSON.stringify(data),
   });
 
-// ارسال پیام در تیکت
 export const addMessageToTicket = (ticketId: number, content: string) =>
-  fetchWithAuth(`${BASE}/tickets/${ticketId}/messages`, {
+  fetchWithAuth(`/tickets/${ticketId}/messages`, {
     method: 'POST',
-    body: JSON.stringify({ content }),
+    body: JSON.stringify({content}),
   });
 
-// حل شدن تیکت (توسط کاربر یا پشتیبانی)
-export const resolveTicket = (ticketId: number, resolution: string) =>
-  fetchWithAuth(`${BASE}/tickets/${ticketId}/resolve`, {
-    method: 'PATCH',
-    body: JSON.stringify({ resolution }),
-  });
-
-// ثبت بازخورد (امتیاز ۱ تا ۵ و توضیح)
+// The current backend exposes feedback, but not a user-facing resolve endpoint.
 export const submitFeedback = (
   ticketId: number,
   rating: number,
-  comment?: string
+  comment?: string,
 ) =>
-  fetchWithAuth(`${BASE}/tickets/${ticketId}/feedback`, {
+  fetchWithAuth(`/tickets/${ticketId}/feedback`, {
     method: 'POST',
-    body: JSON.stringify({ rating, comment }),
+    body: JSON.stringify({rating, comment}),
   });
