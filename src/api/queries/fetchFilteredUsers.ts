@@ -11,6 +11,10 @@ export const fetchFilteredUsers = async ({
     body: JSON.stringify(mapFiltersToApi(filters)),
   });
 
+// Backend exposes exploration separately from filtered search.
+export const fetchExploreUsers = (page = 0, limit = 10) =>
+  fetchWithAuth(`/users/explore?page=${page}&limit=${limit}`);
+
 export const fetchFilterCount = (filters: Record<string, any>) =>
   fetchWithAuth('/users/filter/count', {
     method: 'POST',
