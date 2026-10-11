@@ -20,7 +20,6 @@ export default function PaymentMethod() {
   const route = useRoute();
   const {productId} = route.params as {productId: string};
 
-  const [method, setMethod] = useState<Method | null>(null);
   const {data: productGroups, isLoading: productsLoading} = usePublicProducts();
   const products = [
     ...(productGroups?.boost ?? []),
@@ -38,7 +37,6 @@ export default function PaymentMethod() {
   const [cryptoResult, setCryptoResult] = useState<any>(null);
 
   const handleSelectMethod = async (selected: Method) => {
-    setMethod(selected);
     if (!product || !Number.isFinite(amountRials) || amountRials <= 0) {
       Alert.alert('خطا', 'محصول در فهرست فعال بک‌اند پیدا نشد.');
       return;
@@ -52,7 +50,6 @@ export default function PaymentMethod() {
       else setCryptoResult(result?.data ?? result);
     } catch (error: any) {
       Alert.alert('خطا', error?.message || 'مشکلی پیش آمد. دوباره تلاش کنید.');
-      setMethod(null);
     }
   };
 
