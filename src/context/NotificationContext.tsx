@@ -5,6 +5,7 @@ import {useAuth} from './AuthContext';
 import {useQueryClient} from '@tanstack/react-query';
 import {useToast} from './ToastContext';
 import notifee from '@notifee/react-native';
+import {API_BASE_URL} from '../config/api';
 
 export const NotificationSocketContext = createContext<{
   socket: Socket | null;
@@ -19,47 +20,47 @@ export const NotificationSocketProvider = ({
   const queryClient = useQueryClient();
   const {showToast} = useToast();
   const [socket, setSocket] = useState<Socket | null>(null);
-
-  const [appState, setAppState] = useState<AppStateStatus>(
-    AppState.currentState,
-  );
+  const [appState, setAppState] = useState<AppStateStatus>(AppState.currentState);
 
   useEffect(() => {
-    const subscription = AppState.addEventListener('change', nextAppState => {
-      setAppState(nextAppState);
-    });
+    const subscription = AppState.addEventListener('change', setAppState);
     return () => subscription.remove();
   }, []);
 
   useEffect(() => {
-    if (!user?.id || !token) return;
+    if (!user?.id || !token) {
+      setSocket(current => {
+        current?.disconnect();
+        return null;
+      });
+      return;
+    }
 
-    const newSocket = io('http://192.168.0.133:5001/notification', {
+    const socketUrl = API_BASE_URL.replace(/\/$/, '') + '/notification';
+    const newSocket = io(socketUrl, {
       auth: {token},
       transports: ['websocket'],
+      reconnection: true,
     });
 
-    newSocket.on('connect', () => console.log('✅ Socket connected'));
+    newSocket.on('notification', async (notif: {message?: string; type?: string}) => {
+      await Promise.all([
+        queryClient.invalidateQueries({queryKey: ['unread-notifications']}),
+        queryClient.invalidateQueries({queryKey: ['notifications']}),
+        queryClient.invalidateQueries({queryKey: ['interaction-count']}),
+        queryClient.invalidateQueries({queryKey: ['system-count']}),
+        queryClient.invalidateQueries({queryKey: ['interactions']}),
+        queryClient.invalidateQueries({queryKey: ['system-notifications']}),
+        queryClient.invalidateQueries({queryKey: ['badges']}),
+      ]);
 
-    newSocket.on('notification', async (notif: any) => {
-      console.log('🔔 notification received, state:', AppState.currentState);
-
-      // ✅ Real-time badge update — همه رو invalidate کن
-      queryClient.invalidateQueries({queryKey: ['unread-notifications']});
-      queryClient.invalidateQueries({queryKey: ['notifications']});
-      queryClient.invalidateQueries({queryKey: ['interaction-count']});
-      queryClient.invalidateQueries({queryKey: ['system-count']});
-      queryClient.invalidateQueries({queryKey: ['interactions']});
-      queryClient.invalidateQueries({queryKey: ['system-notifications']});
-      await queryClient.refetchQueries({
-        queryKey: ['badges'],
-      });
-      if (AppState.currentState === 'active') {
-        showToast(notif.message, 'info', undefined, notif.type);
+      const message = notif?.message || 'اعلان جدید دریافت شد';
+      if (appState === 'active') {
+        showToast(message, 'info', undefined, notif?.type);
       } else {
         await notifee.displayNotification({
           title: 'یارسلام',
-          body: notif.message,
+          body: message,
           android: {
             channelId: 'default_channel_v2',
             pressAction: {id: 'default'},
@@ -70,9 +71,11 @@ export const NotificationSocketProvider = ({
 
     setSocket(newSocket);
     return () => {
+      newSocket.removeAllListeners();
       newSocket.disconnect();
+      setSocket(current => (current === newSocket ? null : current));
     };
-  }, [user?.id, token]);
+  }, [user?.id, token, queryClient, showToast, appState]);
 
   return (
     <NotificationSocketContext.Provider value={{socket}}>
