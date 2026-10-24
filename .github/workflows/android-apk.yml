@@ -82,7 +82,7 @@ jobs:
           if len(matches) != 1:
               raise SystemExit("Expected exactly one API_BASE_URL declaration.")
           lines[matches[0]] = "export const API_BASE_URL = " + repr(value) + ";"
-          path.write_text("\\n".join(lines) + "\\n")
+          path.write_text(chr(10).join(lines) + chr(10))
           PY
 
       - name: Lint
