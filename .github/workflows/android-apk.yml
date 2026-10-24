@@ -36,7 +36,7 @@ permissions:
 
 jobs:
   build-test-apk:
-    name: Lint, test and build Android debug APK
+    name: Lint, test and build standalone Android test APK
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
@@ -102,15 +102,15 @@ jobs:
         run: npm test -- --runInBand --passWithNoTests
         continue-on-error: true
 
-      - name: Build Android debug APK
+      - name: Build standalone Android test APK (bundles JavaScript)
         run: |
           cd android
-          ./gradlew --no-daemon --stacktrace assembleDebug
+          ./gradlew --no-daemon --stacktrace assembleRelease
 
       - name: Prepare download and checksum
         run: |
           mkdir -p dist
-          cp android/app/build/outputs/apk/debug/app-debug.apk dist/yarsalam-test-debug.apk
+          cp android/app/build/outputs/apk/release/app-release.apk dist/yarsalam-test.apk
           cd dist
           sha256sum yarsalam-test-debug.apk > SHA256SUMS.txt
 
@@ -119,7 +119,7 @@ jobs:
         with:
           name: yarsalam-test-apk
           path: |
-            dist/yarsalam-test-debug.apk
+            dist/yarsalam-test.apk
             dist/SHA256SUMS.txt
           if-no-files-found: error
           retention-days: 14
@@ -155,7 +155,7 @@ jobs:
           cat > release-notes.md <<'NOTES'
           Automated test build from GitHub Actions.
 
-          This is a debug-signed test APK, not a production release. It uses the HTTPS API URL supplied to the workflow. Do not use this artifact for a public production rollout.
+          This is a test APK built from the release variant so the JavaScript bundle is packaged and Metro is not required. It is signed with the repository debug key for testing, not a production signing key. It uses the HTTPS API URL supplied to the workflow. Do not use this artifact for a public production rollout.
           NOTES
           gh release create "$RELEASE_TAG" \
             dist/yarsalam-test-debug.apk \
