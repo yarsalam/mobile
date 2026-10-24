@@ -137,17 +137,20 @@ jobs:
           path: dist
 
       - name: Publish test APK as a public prerelease
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ inputs.release_tag }}
-          target_commitish: ${{ github.sha }}
-          name: "Yarsalam test APK ${{ inputs.release_tag }}"
-          prerelease: true
-          generate_release_notes: true
-          files: |
-            dist/yarsalam-test-debug.apk
-            dist/SHA256SUMS.txt
-          body: |
-            Automated test build from GitHub Actions.
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: |
+          cat > release-notes.md <<'NOTES'
+          Automated test build from GitHub Actions.
 
-            This is a **debug-signed test APK**, not a production release. It uses the HTTPS API URL supplied to the workflow. Do not use this artifact for a public production rollout.
+          This is a debug-signed test APK, not a production release. It uses the HTTPS API URL supplied to the workflow. Do not use this artifact for a public production rollout.
+          NOTES
+          gh release create "$RELEASE_TAG" \
+            dist/yarsalam-test-debug.apk \
+            dist/SHA256SUMS.txt \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "Yarsalam test APK $RELEASE_TAG" \
+            --notes-file release-notes.md \
+            --prerelease
