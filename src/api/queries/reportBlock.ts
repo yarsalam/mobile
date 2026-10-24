@@ -1,27 +1,29 @@
 import {fetchWithAuth} from '../../lib/fetchWithAuth';
 
 export const reportUser = async (
-  reporterId: number,
+  _reporterId: number,
   reportedUserId: number,
   reason: string,
   message?: string,
   blockUser?: boolean,
-) => {
-  return fetchWithAuth('http://192.168.0.133:5001/report-block/report', {
+) =>
+  fetchWithAuth('/report-block/report', {
     method: 'POST',
-    body: JSON.stringify({
-      reporterId,
-      reportedUserId,
-      reason,
-      message,
-      blockUser,
-    }),
+    // Reporter identity is derived from the JWT on the backend.
+    body: JSON.stringify({reportedUserId, reason, message, blockUser}),
   });
-};
 
-export const blockUser = async (userId: number, targetId: number) => {
-  return fetchWithAuth('http://192.168.0.133:5001/report-block/block', {
+export const blockUser = async (_userId: number, targetId: number) =>
+  fetchWithAuth('/report-block/block', {
     method: 'POST',
-    body: JSON.stringify({userId, targetId}),
+    // The backend accepts targetId only and derives the acting user from JWT.
+    body: JSON.stringify({targetId}),
   });
-};
+
+export const unblockUser = async (targetId: number) =>
+  fetchWithAuth('/report-block/unblock', {
+    method: 'POST',
+    body: JSON.stringify({targetId}),
+  });
+
+export const getBlockedUsers = () => fetchWithAuth('/report-block/blocked');

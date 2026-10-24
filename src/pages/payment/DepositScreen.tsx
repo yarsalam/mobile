@@ -11,12 +11,11 @@ import MainLayout from '../../theme/MainLayout';
 import SectionWithLine from '../../components/SectionWithLine';
 import GlobalText from '../../components/GlobalText';
 import { useTheme } from '../../context/MainContext';
-import { fetchWithAuth } from '../../lib/fetchWithAuth';
+import {fetchWithAuth} from '../../lib/fetchWithAuth';
 import { useQueryClient } from '@tanstack/react-query';
 import CardPaymentSheet from '../../components/CardPaymentSheet/CardPaymentSheet';
 import CryptoPaymentSheet from '../../components/CardPaymentSheet/CryptoPaymentSheet';
 
-const BASE = 'http://192.168.0.133:5001';
 
 /**
  * DepositScreen — شارژ کیف پول
@@ -46,7 +45,7 @@ export default function DepositScreen() {
   const handleCard = async () => {
     setLoading(true);
     try {
-      const res = await fetchWithAuth(`${BASE}/payments/deposit/card`, {
+      const res = await fetchWithAuth('/payments/deposit/card', {
         method: 'POST',
         body: JSON.stringify({ amountRials }),
       });
@@ -61,7 +60,7 @@ export default function DepositScreen() {
   const handleCrypto = async () => {
     setLoading(true);
     try {
-      const res = await fetchWithAuth(`${BASE}/payments/deposit/crypto`, {
+      const res = await fetchWithAuth('/payments/deposit/crypto', {
         method: 'POST',
         body: JSON.stringify({ amountRials }),
       });

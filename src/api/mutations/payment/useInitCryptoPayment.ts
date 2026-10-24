@@ -1,5 +1,5 @@
-import { useMutation } from '@tanstack/react-query';
-import { initCryptoPayment } from '../../queries/payments';
+import {useMutation} from '@tanstack/react-query';
+import {initCryptoPayment} from '../../queries/payments';
 
 export interface CryptoPaymentInitResult {
   paymentId: number;
@@ -10,16 +10,6 @@ export interface CryptoPaymentInitResult {
   expiresAt: string;
 }
 
-
-
 export function useInitCryptoPayment() {
-  return useMutation({
-    mutationFn: initCryptoPayment,
-    onSuccess: (data) => {
-      console.log('Crypto payment initiated:', data);
-    },
-    onError: (error: any) => {
-      console.error('Crypto payment failed:', error);
-    },
-  });
+  return useMutation({mutationFn: initCryptoPayment});
 }
