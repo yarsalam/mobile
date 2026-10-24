@@ -6,9 +6,9 @@
 
 ## ساخت APK از GitHub
 
-1. ابتدا PR مربوط به تطبیق قراردادهای API موبایل را بررسی و ادغام کنید.
+1. ابتدا همین PR مربوط به workflow را به `main` ادغام کنید تا GitHub Actions آن را بشناسد.
 2. به تب **Actions** مخزن `yarsalam/mobile` بروید و workflow **Android test APK** را انتخاب کنید.
-3. **Run workflow** را بزنید و شاخه‌ای را انتخاب کنید که `src/config/api.ts` را دارد، فعلاً `fix/mobile-api-auth-contracts`.
+3. **Run workflow** را بزنید و شاخه `fix/mobile-api-auth-contracts` را انتخاب کنید؛ این شاخه فایل `src/config/api.ts` و تغییرات API موبایل را دارد. این کار امکان تست APK را پیش از ادغام PR موبایل فراهم می‌کند.
 4. آدرس API را `https://api.yarsalam.top` بگذارید. تا زمان آماده شدن DNS، TLS و بک‌اند، APK ساخته‌شده ممکن است به API متصل نشود.
 5. برای ساخت فقط artifact، فیلد `release_tag` را خالی بگذارید. از خروجی اجرای workflow، artifact با نام `yarsalam-test-apk` را دانلود کنید. این artifact موقت است و به ورود به GitHub نیاز دارد.
 6. اگر یک لینک عمومی دانلود می‌خواهید، در اجرای دستی `release_tag` یکتا مانند `test-v0.1.0` وارد کنید. در صورت موفقیت build، یک GitHub prerelease عمومی همراه APK و فایل SHA-256 ساخته می‌شود.
