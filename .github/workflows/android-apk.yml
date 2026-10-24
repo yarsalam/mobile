@@ -1,0 +1,157 @@
+name: Android test APK
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "android/**"
+      - "package.json"
+      - "package-lock.json"
+      - "app.json"
+      - ".github/workflows/android-apk.yml"
+      - "README.md"
+  workflow_dispatch:
+    inputs:
+      api_base_url:
+        description: "HTTPS API origin embedded in the test APK"
+        required: true
+        default: "https://api.yarsalam.top"
+        type: string
+      release_tag:
+        description: "Optional tag to publish a public prerelease (e.g. test-v0.1.0); leave blank for artifact only"
+        required: false
+        default: ""
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  build-test-apk:
+    name: Lint, test and build Android debug APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      API_BASE_URL: ${{ inputs.api_base_url || 'https://api.yarsalam.top' }}
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22.13.1"
+          cache: npm
+
+      - name: Set up Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK packages used by the project
+        run: |
+          sdkmanager "platform-tools" "platforms;android-37" "build-tools;37.0.0" "ndk;27.1.12297006"
+
+      - name: Install JavaScript dependencies
+        run: npm ci
+
+      - name: Validate and apply API URL
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import os
+          import re
+          from pathlib import Path
+
+          value = os.environ["API_BASE_URL"].strip()
+          if not re.fullmatch(r"https://[A-Za-z0-9.-]+(?::[0-9]+)?(?:/[^\s]*)?", value):
+              raise SystemExit("API_BASE_URL must be an HTTPS URL with a valid hostname.")
+
+          path = Path("src/config/api.ts")
+          if not path.is_file():
+              raise SystemExit("src/config/api.ts is missing on this ref; use the mobile API-contract branch.")
+
+          source = path.read_text()
+          updated, count = re.subn(
+              r"export const API_BASE_URL = ['\"][^'\"\n]+['\"];",
+              "export const API_BASE_URL = " + repr(value) + ";",
+              source,
+              count=1,
+          )
+          if count != 1:
+              raise SystemExit("Could not find exactly one API_BASE_URL declaration.")
+          path.write_text(updated)
+          print(f"Using API origin: {value}")
+          PY
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Run Jest tests
+        run: npm test -- --runInBand --passWithNoTests
+
+      - name: Build Android debug APK
+        run: |
+          cd android
+          ./gradlew --no-daemon --stacktrace assembleDebug
+
+      - name: Prepare download and checksum
+        run: |
+          mkdir -p dist
+          cp android/app/build/outputs/apk/debug/app-debug.apk dist/yarsalam-test-debug.apk
+          cd dist
+          sha256sum yarsalam-test-debug.apk > SHA256SUMS.txt
+
+      - name: Upload APK artifact (14-day retention)
+        uses: actions/upload-artifact@v7
+        with:
+          name: yarsalam-test-apk
+          path: |
+            dist/yarsalam-test-debug.apk
+            dist/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 14
+
+  publish-public-prerelease:
+    name: Publish optional public GitHub prerelease
+    if: github.event_name == 'workflow_dispatch' && inputs.release_tag != ''
+    needs: build-test-apk
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Validate release tag
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: |
+          if [[ ! "$RELEASE_TAG" =~ ^[A-Za-z0-9._-]+$ ]]; then
+            echo "release_tag may contain only letters, numbers, dots, underscores and hyphens."
+            exit 1
+          fi
+
+      - name: Download APK artifact
+        uses: actions/download-artifact@v7
+        with:
+          name: yarsalam-test-apk
+          path: dist
+
+      - name: Publish test APK as a public prerelease
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.release_tag }}
+          target_commitish: ${{ github.sha }}
+          name: "Yarsalam test APK ${{ inputs.release_tag }}"
+          prerelease: true
+          generate_release_notes: true
+          files: |
+            dist/yarsalam-test-debug.apk
+            dist/SHA256SUMS.txt
+          body: |
+            Automated test build from GitHub Actions.
+
+            This is a **debug-signed test APK**, not a production release. It uses the HTTPS API URL supplied to the workflow. Do not use this artifact for a public production rollout.
