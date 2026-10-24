@@ -77,16 +77,12 @@ jobs:
               raise SystemExit("src/config/api.ts is missing on this ref; use the mobile API-contract branch.")
 
           source = path.read_text()
-          updated, count = re.subn(
-              r"export const API_BASE_URL = ['\"][^'\"\n]+['\"];",
-              "export const API_BASE_URL = " + repr(value) + ";",
-              source,
-              count=1,
-          )
-          if count != 1:
-              raise SystemExit("Could not find exactly one API_BASE_URL declaration.")
-          path.write_text(updated)
-          print(f"Using API origin: {value}")
+          lines = source.splitlines()
+          matches = [i for i, line in enumerate(lines) if line.startswith("export const API_BASE_URL = ")]
+          if len(matches) != 1:
+              raise SystemExit("Expected exactly one API_BASE_URL declaration.")
+          lines[matches[0]] = "export const API_BASE_URL = " + repr(value) + ";"
+          path.write_text("\\n".join(lines) + "\\n")
           PY
 
       - name: Lint
