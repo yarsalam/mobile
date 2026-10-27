@@ -30,6 +30,11 @@ on:
         required: false
         default: ""
         type: string
+      source_ref:
+        description: "Source branch to build (default: mobile API contract branch)"
+        required: true
+        default: "fix/mobile-api-auth-contracts"
+        type: string
 
 permissions:
   contents: read
@@ -44,6 +49,8 @@ jobs:
     steps:
       - name: Checkout source
         uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.source_ref || (github.event_name == 'push' && contains(github.event.head_commit.message, '[publish-test-apk]') && 'fix/mobile-api-auth-contracts') || github.ref }}
 
       - name: Set up Node.js
         uses: actions/setup-node@v6
@@ -131,6 +138,7 @@ jobs:
           cp android/app/build/outputs/apk/release/app-release.apk dist/yarsalam-test.apk
           cd dist
           sha256sum yarsalam-test.apk > SHA256SUMS.txt
+          git rev-parse HEAD > SOURCE_COMMIT.txt
 
       - name: Upload APK artifact (14-day retention)
         uses: actions/upload-artifact@v7
@@ -139,12 +147,13 @@ jobs:
           path: |
             dist/yarsalam-test.apk
             dist/SHA256SUMS.txt
+            dist/SOURCE_COMMIT.txt
           if-no-files-found: error
           retention-days: 14
 
   publish-public-prerelease:
     name: Publish optional public GitHub prerelease
-    if: github.event_name == 'workflow_dispatch' && inputs.release_tag != ''
+    if: (github.event_name == 'workflow_dispatch' && inputs.release_tag != '') || (github.event_name == 'push' && contains(github.event.head_commit.message, '[publish-test-apk]'))
     needs: build-test-apk
     runs-on: ubuntu-latest
     permissions:
@@ -152,7 +161,7 @@ jobs:
     steps:
       - name: Validate release tag
         env:
-          RELEASE_TAG: ${{ inputs.release_tag }}
+          RELEASE_TAG: ${{ inputs.release_tag || 'test-v0.1.0' }}
         run: |
           if [[ ! "$RELEASE_TAG" =~ ^[A-Za-z0-9._-]+$ ]]; then
             echo "release_tag may contain only letters, numbers, dots, underscores and hyphens."
@@ -168,7 +177,7 @@ jobs:
       - name: Publish test APK as a public prerelease
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ inputs.release_tag }}
+          RELEASE_TAG: ${{ inputs.release_tag || 'test-v0.1.0' }}
         run: |
           cat > release-notes.md <<'NOTES'
           Automated test build from GitHub Actions.
@@ -179,7 +188,7 @@ jobs:
             dist/yarsalam-test.apk \
             dist/SHA256SUMS.txt \
             --repo "$GITHUB_REPOSITORY" \
-            --target "$GITHUB_SHA" \
+            --target "$(cat dist/SOURCE_COMMIT.txt)" \
             --title "Yarsalam test APK $RELEASE_TAG" \
             --notes-file release-notes.md \
             --prerelease
