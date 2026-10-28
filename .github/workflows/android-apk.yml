@@ -50,7 +50,7 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v5
         with:
-          ref: ${{ inputs.source_ref || (github.event_name == 'push' && contains(github.event.head_commit.message, '[publish-test-apk]') && 'fix/mobile-api-auth-contracts') || github.ref }}
+          ref: ${{ inputs.source_ref || github.ref }}
 
       - name: Set up Node.js
         uses: actions/setup-node@v6
@@ -170,7 +170,7 @@ jobs:
     steps:
       - name: Validate release tag
         env:
-          RELEASE_TAG: ${{ inputs.release_tag || 'test-v0.1.0' }}
+          RELEASE_TAG: ${{ inputs.release_tag || 'test-v0.1.1' }}
         run: |
           if [[ ! "$RELEASE_TAG" =~ ^[A-Za-z0-9._-]+$ ]]; then
             echo "release_tag may contain only letters, numbers, dots, underscores and hyphens."
@@ -186,7 +186,7 @@ jobs:
       - name: Publish test APK as a public prerelease
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ inputs.release_tag || 'test-v0.1.0' }}
+          RELEASE_TAG: ${{ inputs.release_tag || 'test-v0.1.1' }}
         run: |
           cat > release-notes.md <<'NOTES'
           Automated test build from GitHub Actions.
