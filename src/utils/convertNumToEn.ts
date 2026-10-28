@@ -11,5 +11,13 @@ export const convertPersianNumbersToEnglish = (text: string): string => {
     '۸': '8',
     '۹': '9',
   };
-  return text.replace(/[۰-۹]/g, char => persianNumbers[char]);
+
+  return text.replace(/[۰-۹٠-٩]/g, char => {
+    if (persianNumbers[char] !== undefined) {
+      return persianNumbers[char];
+    }
+
+    // Arabic-Indic digits (٠١٢٣...) are also used by some keyboards.
+    return String(char.charCodeAt(0) - 0x0660);
+  });
 };

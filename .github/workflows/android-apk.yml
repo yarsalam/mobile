@@ -26,9 +26,9 @@ on:
         default: "https://api.yarsalam.top"
         type: string
       release_tag:
-        description: "Unique tag to publish a public prerelease (next available default: test-v0.1.2)"
+        description: "Unique tag to publish a public prerelease (next available default: test-v0.1.3)"
         required: false
-        default: "test-v0.1.2"
+        default: "test-v0.1.3"
         type: string
       source_ref:
         description: "Source branch to build (use main after merging this PR)"
@@ -188,7 +188,7 @@ jobs:
     steps:
       - name: Validate release tag
         env:
-          RELEASE_TAG: ${{ inputs.release_tag || 'test-v0.1.2' }}
+          RELEASE_TAG: ${{ inputs.release_tag || 'test-v0.1.3' }}
         run: |
           if [[ ! "$RELEASE_TAG" =~ ^[A-Za-z0-9._-]+$ ]]; then
             echo "release_tag may contain only letters, numbers, dots, underscores and hyphens."
@@ -204,7 +204,7 @@ jobs:
       - name: Publish test APK as a public prerelease
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ inputs.release_tag || 'test-v0.1.2' }}
+          RELEASE_TAG: ${{ inputs.release_tag || 'test-v0.1.3' }}
         run: |
           cat > release-notes.md <<'NOTES'
           Automated test build from GitHub Actions.
