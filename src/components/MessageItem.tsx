@@ -4,6 +4,7 @@ import {GroupedMessageDto} from '../../types/messageType';
 import {useNavigation} from '@react-navigation/native';
 import {useToast} from '../context/ToastContext';
 import GlobalText from './GlobalText';
+import {API_BASE_URL} from '../config/api';
 
 interface Props {
   data: GroupedMessageDto;
@@ -47,12 +48,7 @@ const MessageItem: React.FC<Props> = ({data}) => {
   const unreadCount = isFree
     ? unreadFreeMessagesCount
     : unreadPaidMessagesCount;
-  const isDev = __DEV__;
-
-  const BASE_URL = isDev
-    ? 'http://192.168.1.14:5000'
-    : 'https://your-production-url.com';
-  `${BASE_URL}${avatar}?t=${Date.now()}`;
+  const BASE_URL = API_BASE_URL;
 
   return (
     <TouchableOpacity
