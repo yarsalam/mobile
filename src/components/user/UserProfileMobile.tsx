@@ -28,6 +28,7 @@ import {useReportMutation} from '../../api/intractions/mutations/useReportMutati
 import {useBlockMutation} from '../../api/intractions/mutations/useBlockMutation';
 import {useUnBlockMutation} from '../../api/intractions/mutations/useUnBlockMutation';
 import {useRelationStatus} from '../../api/mutations/relations';
+import {API_BASE_URL} from '../../config/api';
 import {useRecordVisit} from '../../api/mutations/visitors/useRecordVisit';
 
 const {width: SCREEN_WIDTH} = Dimensions.get('window');
@@ -209,7 +210,7 @@ const UserProfileMobile = ({user: passedUser}: {user?: any}) => {
         ...img,
         url: img.url?.startsWith('http')
           ? img.url
-          : `http://192.168.0.133:5001${img.url}?t=${Date.now()}`,
+          : `${API_BASE_URL}${img.url}?t=${Date.now()}`,
       })),
     [rawImages],
   );
