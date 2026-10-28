@@ -22,10 +22,7 @@ import ImageSlider from '../../components/image/ImageSlider';
 import ConfirmModal from '../../components/image/ConfirmModal';
 import {useVerificationStatus} from '../../api/mutations/verification/useVerification';
 import {useNavigation} from '@react-navigation/native';
-
-const BASE_URL = __DEV__
-  ? 'http://192.168.0.133:5001'
-  : 'https://your-production-url.com';
+import {API_BASE_URL} from '../../config/api';
 
 const EditImg = () => {
   const {user} = useAuth();
@@ -44,7 +41,7 @@ const EditImg = () => {
         ...img,
         url: img.url?.startsWith('http')
           ? img.url
-          : `${BASE_URL}${img.url}?t=${Date.now()}`,
+          : `${API_BASE_URL}${img.url}?t=${Date.now()}`,
       })),
     [images],
   );
@@ -72,7 +69,7 @@ const EditImg = () => {
       main
         ? main.url?.startsWith('http')
           ? main.url
-          : `${BASE_URL}${main.url}?t=${Date.now()}`
+          : `${API_BASE_URL}${main.url}?t=${Date.now()}`
         : null,
     );
   }, [images]);
@@ -118,7 +115,7 @@ const EditImg = () => {
       allUrls.some(
         u =>
           u === mainImageUrl ||
-          `${BASE_URL}${u}` === mainImageUrl?.split('?')[0],
+          `${API_BASE_URL}${u}` === mainImageUrl?.split('?')[0],
       );
 
     if (!hasMain) {
@@ -170,7 +167,7 @@ const EditImg = () => {
     if (!pendingMainUrl) return;
     setMainImageUrl(pendingMainUrl);
     const isFromGallery = images.some(
-      img => `${BASE_URL}${img.url}` === pendingMainUrl.split('?')[0],
+      img => `${API_BASE_URL}${img.url}` === pendingMainUrl.split('?')[0],
     );
     if (isFromGallery) {
       const clean = pendingMainUrl.replace(BASE_URL, '').split('?')[0];
