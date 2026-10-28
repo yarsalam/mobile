@@ -162,7 +162,7 @@ jobs:
 
   publish-public-prerelease:
     name: Publish optional public GitHub prerelease
-    if: (github.event_name == 'workflow_dispatch' && inputs.release_tag != '') || (github.event_name == 'push' && contains(github.event.head_commit.message, '[publish-test-apk]'))
+    if: github.event_name == 'workflow_dispatch' && inputs.release_tag != ''
     needs: build-test-apk
     runs-on: ubuntu-latest
     permissions:
@@ -203,5 +203,70 @@ jobs:
             --repo "$GITHUB_REPOSITORY" \
             --target "$(cat dist/SOURCE_COMMIT.txt)" \
             --title "Yarsalam test APK $RELEASE_TAG" \
+            --notes-file release-notes.md \
+            --prerelease
+
+  # One-time recovery: reuse the successful PR build because its Git tree is
+  # identical to the pre-recovery main tree. The before-SHA guard prevents reuse
+  # on future pushes. Remove this job after test-v0.1.1 is published.
+  publish-recovered-v0-1-1:
+    name: Publish test-v0.1.1 from previously validated identical-tree artifact
+    if: >-
+      github.event_name == 'push' &&
+      github.event.before == 'a3d08a960e2e11a28f6e1faf4764c2ee456535ef' &&
+      contains(github.event.head_commit.message, '[publish-test-apk]')
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - name: Download artifact from successful build of identical Git tree
+        uses: actions/download-artifact@v7
+        with:
+          name: yarsalam-test-apks
+          repository: ${{ github.repository }}
+          run-id: 40642940561
+          github-token: ${{ github.token }}
+          path: dist
+
+      - name: Verify APK files and checksums
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s dist/yarsalam-arm64-v8a.apk
+          test -s dist/yarsalam-armeabi-v7a.apk
+          test -s dist/SHA256SUMS.txt
+          (cd dist && sha256sum -c SHA256SUMS.txt)
+          echo "Validated APK sizes:"
+          du -h dist/yarsalam-*.apk
+
+      - name: Publish public test prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: test-v0.1.1
+        shell: bash
+        run: |
+          set -euo pipefail
+          if gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Release $RELEASE_TAG already exists; refusing to overwrite it."
+            exit 1
+          fi
+          cat > release-notes.md <<'NOTES'
+          YarSalam Android test build.
+
+          Download **yarsalam-arm64-v8a.apk** for most modern Android phones (64-bit ARM).
+          Use **yarsalam-armeabi-v7a.apk** for compatible older 32-bit ARM phones.
+
+          These APKs include the JavaScript bundle and do not require Metro.
+          They are signed with the repository debug key for testing, not a production signing key.
+          Do not use this prerelease for a production rollout.
+          NOTES
+          gh release create "$RELEASE_TAG" \
+            dist/yarsalam-arm64-v8a.apk \
+            dist/yarsalam-armeabi-v7a.apk \
+            dist/SHA256SUMS.txt \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "YarSalam test APK $RELEASE_TAG" \
             --notes-file release-notes.md \
             --prerelease
