@@ -26,14 +26,14 @@ on:
         default: "https://api.yarsalam.top"
         type: string
       release_tag:
-        description: "Optional tag to publish a public prerelease (e.g. test-v0.1.0); leave blank for artifact only"
+        description: "Unique tag to publish a public prerelease (next available default: test-v0.1.1)"
         required: false
-        default: ""
+        default: "test-v0.1.1"
         type: string
       source_ref:
-        description: "Source branch to build (default: mobile API contract branch)"
+        description: "Source branch to build (use main after merging this PR)"
         required: true
-        default: "fix/mobile-api-auth-contracts"
+        default: "main"
         type: string
 
 permissions:
@@ -50,7 +50,7 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v5
         with:
-          ref: ${{ inputs.source_ref || (github.event_name == 'push' && contains(github.event.head_commit.message, '[publish-test-apk]') && 'fix/mobile-api-auth-contracts') || github.ref }}
+          ref: ${{ inputs.source_ref || github.ref }}
 
       - name: Set up Node.js
         uses: actions/setup-node@v6
@@ -132,20 +132,29 @@ jobs:
           cd android
           ./gradlew --no-daemon --stacktrace assembleRelease
 
-      - name: Prepare download and checksum
+      - name: Prepare per-ABI APKs and checksums
+        shell: bash
         run: |
+          set -euo pipefail
+          OUT="android/app/build/outputs/apk/release"
           mkdir -p dist
-          cp android/app/build/outputs/apk/release/app-release.apk dist/yarsalam-test.apk
+          test -s "$OUT/app-arm64-v8a-release.apk"
+          test -s "$OUT/app-armeabi-v7a-release.apk"
+          cp "$OUT/app-arm64-v8a-release.apk" dist/yarsalam-arm64-v8a.apk
+          cp "$OUT/app-armeabi-v7a-release.apk" dist/yarsalam-armeabi-v7a.apk
           cd dist
-          sha256sum yarsalam-test.apk > SHA256SUMS.txt
+          sha256sum yarsalam-arm64-v8a.apk yarsalam-armeabi-v7a.apk > SHA256SUMS.txt
           git rev-parse HEAD > SOURCE_COMMIT.txt
+          echo "Individual downloadable APK sizes:"
+          du -h yarsalam-*.apk
 
-      - name: Upload APK artifact (14-day retention)
+      - name: Upload APK artifacts (14-day retention)
         uses: actions/upload-artifact@v7
         with:
-          name: yarsalam-test-apk
+          name: yarsalam-test-apks
           path: |
-            dist/yarsalam-test.apk
+            dist/yarsalam-arm64-v8a.apk
+            dist/yarsalam-armeabi-v7a.apk
             dist/SHA256SUMS.txt
             dist/SOURCE_COMMIT.txt
           if-no-files-found: error
@@ -161,7 +170,7 @@ jobs:
     steps:
       - name: Validate release tag
         env:
-          RELEASE_TAG: ${{ inputs.release_tag || 'test-v0.1.0' }}
+          RELEASE_TAG: ${{ inputs.release_tag || 'test-v0.1.1' }}
         run: |
           if [[ ! "$RELEASE_TAG" =~ ^[A-Za-z0-9._-]+$ ]]; then
             echo "release_tag may contain only letters, numbers, dots, underscores and hyphens."
@@ -171,21 +180,25 @@ jobs:
       - name: Download APK artifact
         uses: actions/download-artifact@v7
         with:
-          name: yarsalam-test-apk
+          name: yarsalam-test-apks
           path: dist
 
       - name: Publish test APK as a public prerelease
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ inputs.release_tag || 'test-v0.1.0' }}
+          RELEASE_TAG: ${{ inputs.release_tag || 'test-v0.1.1' }}
         run: |
           cat > release-notes.md <<'NOTES'
           Automated test build from GitHub Actions.
 
-          This is a test APK built from the release variant so the JavaScript bundle is packaged and Metro is not required. It is signed with the repository debug key for testing, not a production signing key. It uses the HTTPS API URL supplied to the workflow. Do not use this artifact for a public production rollout.
+          Download yarsalam-arm64-v8a.apk for most modern Android phones (64-bit ARM). If it is not compatible with the device, try yarsalam-armeabi-v7a.apk (32-bit ARM).
+
+          These APKs bundle JavaScript and do not require Metro. They are signed with the repository debug key for testing, not a production signing key. They use the HTTPS API URL supplied to the workflow. Do not use them for a public production rollout.
           NOTES
+          # Each release run needs a unique tag; existing tags are not overwritten.
           gh release create "$RELEASE_TAG" \
-            dist/yarsalam-test.apk \
+            dist/yarsalam-arm64-v8a.apk \
+            dist/yarsalam-armeabi-v7a.apk \
             dist/SHA256SUMS.txt \
             --repo "$GITHUB_REPOSITORY" \
             --target "$(cat dist/SOURCE_COMMIT.txt)" \

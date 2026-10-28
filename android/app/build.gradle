@@ -85,6 +85,17 @@ android {
         versionCode 1
         versionName "1.0"
     }
+
+    // Direct-download APKs are split by phone ABI to avoid bundling all
+    // native architectures in a single large APK. No universal APK is emitted.
+    splits {
+        abi {
+            enable true
+            reset()
+            include "arm64-v8a", "armeabi-v7a"
+            universalApk false
+        }
+    }
     signingConfigs {
         debug {
             storeFile file('debug.keystore')
