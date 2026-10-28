@@ -37,7 +37,7 @@ const AccountActionsScreen = () => {
     setLoading(true);
     try {
       await fetchWithAuth(
-        `http://192.168.0.133:5001/users/${user.id}/${modalAction}`,
+        `/users/${user.id}/${modalAction}`,
         {
           method: 'PATCH',
         },

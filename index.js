@@ -4,6 +4,8 @@ import {name as appName} from './app.json';
 import BackgroundFetch from 'react-native-background-fetch';
 import notifee, {AndroidImportance} from '@notifee/react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import {API_BASE_URL} from './src/config/api';
+import {getDeviceHeaders} from './src/lib/deviceInfo';
 
 // ✅ همون تابع — کپی کن یا از یه فایل مشترک import کن
 async function checkNotifications() {
@@ -11,10 +13,15 @@ async function checkNotifications() {
     const token = await AsyncStorage.getItem('auth_token');
     if (!token) return;
 
-    const res = await fetch('http://192.168.0.133:5001/notifications/pending', {
-      headers: {Authorization: `Bearer ${token}`},
+    const deviceHeaders = await getDeviceHeaders();
+    const res = await fetch(`${API_BASE_URL}/notifications/pending`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        ...deviceHeaders,
+      },
     });
 
+    if (!res.ok) return;
     const data = await res.json();
 
     if (data.hasUnread) {

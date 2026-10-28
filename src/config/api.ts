@@ -1,9 +1,10 @@
 /**
- * Public API base URL.
+ * Single source of truth for REST and Socket.IO connections.
  *
- * The Android CI workflow can override this value at build time for test
- * environments. Use HTTPS for any publicly distributed APK. The hostname is
- * a planned endpoint; DNS, TLS and backend availability must be verified
- * separately before expecting network requests to succeed.
+ * Public APKs must use the public HTTPS API hostname reachable by users'
+ * devices. Never embed a developer LAN address (for example, 192.168.x.x):
+ * phones outside that private network cannot route to it.
+ *
+ * DNS, TLS and backend availability still need to be verified separately.
  */
 export const API_BASE_URL = 'https://api.yarsalam.top';

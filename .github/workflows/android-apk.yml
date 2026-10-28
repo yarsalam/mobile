@@ -26,9 +26,9 @@ on:
         default: "https://api.yarsalam.top"
         type: string
       release_tag:
-        description: "Unique tag to publish a public prerelease (next available default: test-v0.1.1)"
+        description: "Unique tag to publish a public prerelease (next available default: test-v0.1.2)"
         required: false
-        default: "test-v0.1.1"
+        default: "test-v0.1.2"
         type: string
       source_ref:
         description: "Source branch to build (use main after merging this PR)"
@@ -98,13 +98,31 @@ jobs:
         shell: bash
         run: |
           python3 - <<'PY'
+          import ipaddress
           import os
           import re
           from pathlib import Path
+          from urllib.parse import urlsplit
 
           value = os.environ["API_BASE_URL"].strip()
           if not re.fullmatch(r"https://[A-Za-z0-9.-]+(?::[0-9]+)?(?:/[^\s]*)?", value):
               raise SystemExit("API_BASE_URL must be an HTTPS URL with a valid hostname.")
+
+          parsed = urlsplit(value)
+          hostname = (parsed.hostname or "").rstrip(".").lower()
+          if not hostname or parsed.username or parsed.password:
+              raise SystemExit("API_BASE_URL must contain a valid public API hostname.")
+
+          if hostname in {"localhost", "localhost.localdomain"} or hostname.endswith(".local"):
+              raise SystemExit("Do not use localhost or a LAN-only hostname in a downloadable APK.")
+
+          try:
+              ip_address = ipaddress.ip_address(hostname)
+          except ValueError:
+              ip_address = None
+
+          if ip_address is not None:
+              raise SystemExit("Use a public HTTPS DNS hostname, not an IP address. Private/LAN IPs are only reachable inside the developer's local network.")
 
           path = Path("src/config/api.ts")
           if not path.is_file():
@@ -170,7 +188,7 @@ jobs:
     steps:
       - name: Validate release tag
         env:
-          RELEASE_TAG: ${{ inputs.release_tag || 'test-v0.1.1' }}
+          RELEASE_TAG: ${{ inputs.release_tag || 'test-v0.1.2' }}
         run: |
           if [[ ! "$RELEASE_TAG" =~ ^[A-Za-z0-9._-]+$ ]]; then
             echo "release_tag may contain only letters, numbers, dots, underscores and hyphens."
@@ -186,7 +204,7 @@ jobs:
       - name: Publish test APK as a public prerelease
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ inputs.release_tag || 'test-v0.1.1' }}
+          RELEASE_TAG: ${{ inputs.release_tag || 'test-v0.1.2' }}
         run: |
           cat > release-notes.md <<'NOTES'
           Automated test build from GitHub Actions.

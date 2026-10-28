@@ -2,8 +2,6 @@ import {useMutation, useQueryClient} from '@tanstack/react-query';
 import {fetchWithAuth} from '../../../lib/fetchWithAuth';
 import {useToast} from '../../../context/ToastContext';
 
-const BASE = 'http://192.168.0.133:5001';
-
 interface CreateTicketPayload {
   title: string;
   description: string;
@@ -11,7 +9,7 @@ interface CreateTicketPayload {
 }
 
 const createTicketFn = (data: CreateTicketPayload) =>
-  fetchWithAuth(`${BASE}/tickets`, {
+  fetchWithAuth('/tickets', {
     method: 'POST',
     body: JSON.stringify(data),
   });
