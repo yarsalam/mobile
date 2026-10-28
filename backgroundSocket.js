@@ -1,5 +1,6 @@
 import notifee, { AndroidImportance } from '@notifee/react-native';
 import { io } from 'socket.io-client';
+import {API_BASE_URL} from './src/config/api';
 
 let bgSocket = null;
 
@@ -26,7 +27,7 @@ export const startBackgroundSocketService = async (token, userId) => {
       // این Promise هرگز resolve نمی‌شود تا سرویس زنده بماند
       
       if (!bgSocket) {
-        bgSocket = io('http://YOUR_SERVER_IP:5001/notification', {
+        bgSocket = io(`${API_BASE_URL.replace(/\/+$/, '')}/notification`, {
           auth: { token },
           transports: ['websocket'],
         });
