@@ -1,6 +1,6 @@
 import React from 'react';
 import {StyleSheet} from 'react-native';
-import {useForm} from 'react-hook-form';
+import {useForm, Controller} from 'react-hook-form';
 import {zodResolver} from '@hookform/resolvers/zod';
 import {
   registerStep1Schema,
@@ -13,28 +13,18 @@ import {
   NativeStackScreenProps,
 } from '@react-navigation/native-stack';
 import {RootStackParamList} from '../../../types/rootStackParamList';
-import {Controller} from 'react-hook-form';
 import {convertPersianNumbersToEnglish} from '../../utils/convertNumToEn';
-
-import {
-  saveRegisterPhone,
-  saveRegisterStep,
-} from '../../lib/useRegisterStorage';
 import {useNavigation} from '@react-navigation/native';
 import FormInput from '../../components/FormInput';
 import {useRegisterStep1Mutation} from '../../api/auth/mutations/useRegisterStep1Mutation';
 import AuthLayout from '../../components/user/AuthLayout';
 import {getAcquisitionData} from '../../utils/acquisition';
-import {useToast} from '../../context/ToastContext';
-import {getRegisterStatus} from '../../api/auth/queries/auth';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type RegisterProps = NativeStackScreenProps<RootStackParamList, 'Register'>;
 
 const Register: React.FC<RegisterProps> = () => {
   const navigation = useNavigation<NavigationProp>();
-  const {showToast} = useToast(); // بالای کامپوننت، کنار useForm
-  React.useEffect(() => {}, [navigation]);
 
   const {
     control,
@@ -52,16 +42,7 @@ const Register: React.FC<RegisterProps> = () => {
   const onSubmit = async (data: RegisterStep1Type) => {
     const phone = convertPersianNumbersToEnglish(data.phone);
 
-    // اگه این شماره قبلاً ثبت‌نام کامل کرده، به‌جای تلاش دوباره، بفرستش Login
-    const status = await getRegisterStatus(phone);
-    if (status.isVerified && status.isCompleted) {
-      showToast('این شماره قبلاً ثبت‌نام شده است', 'error');
-      navigation.navigate('Login', {
-        error: '',
-      });
-      return;
-    }
-
+    // اطلاعات جذب اختیاری‌اند؛ اگر قابل خواندن نبودند، ثبت‌نام باید ادامه پیدا کند.
     let acq;
     try {
       acq = await getAcquisitionData();
@@ -90,24 +71,17 @@ const Register: React.FC<RegisterProps> = () => {
       metadata: {referralCode, ...acquisitionMeta},
     };
 
-    try {
-      const res = await register.mutateAsync(sanitizedData);
-      console.log('STEP1 SUCCESS', res);
-      await saveRegisterPhone(sanitizedData.phone);
-      await saveRegisterStep(2);
-      navigation.navigate('SelectChannel');
-    } catch (e) {
-      showToast('ثبت‌نام انجام نشد، دوباره تلاش کنید', 'error');
-      console.log('STEP1 ERROR', e);
-    }
+    // خود endpoint ثبت‌نام شماره‌های قبلی را تشخیص می‌دهد. حذف درخواست
+    // پیش‌بررسی از گیر کردن فرم در صورت خطای شبکه روی register-status جلوگیری می‌کند.
+    // hook، خطا را به کاربر نشان می‌دهد و پس از موفقیت ذخیره و مسیردهی می‌کند.
+    register.mutate(sanitizedData);
   };
 
   return (
     <AuthLayout
       cardTitle="ثبت نام در یارسلام"
-      errors={errors} // ← مهم: حتما پاس کن
-      submitCount={submitCount} // ← مهم: حتما پاس کن
-      onContinue={handleSubmit(onSubmit)}>
+      errors={errors}
+      submitCount={submitCount}>
       <Controller
         control={control}
         name="phone"
