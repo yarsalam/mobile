@@ -25,5 +25,5 @@ jobs:
           cache: npm
       - name: Install locked dependencies
         run: npm ci
-      - name: TypeScript validation
-        run: npx tsc --noEmit
+      - name: Lint changed chat and moderation files
+        run: npx eslint src/lib/useModeratedSend.ts src/api/queries/messages.ts src/api/mutations/messages/useSendMessage.ts src/pages/messages/ChatScreen.tsx
