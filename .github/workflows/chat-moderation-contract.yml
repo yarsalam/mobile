@@ -1,0 +1,29 @@
+name: Chat Moderation Contract
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "src/lib/useModeratedSend.ts"
+      - "src/api/queries/messages.ts"
+      - "src/api/mutations/messages/useSendMessage.ts"
+      - "src/pages/messages/ChatScreen.tsx"
+      - ".github/workflows/chat-moderation-contract.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  mobile-types:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
+      - name: TypeScript validation
+        run: npx tsc --noEmit
