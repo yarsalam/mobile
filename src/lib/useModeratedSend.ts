@@ -2,10 +2,9 @@ import { useCallback, useState } from 'react';
 import { Alert } from 'react-native';
 import { useModerationCheck } from '../api/mutations/useModerationCheck';
 
-
 interface UseModeratedSendOptions {
   receiverId: number;
-  onSend: (text: string) => void;   // عملیات ارسال نهایی
+  onSend: (text: string, acknowledged?: boolean) => void;
 }
 
 export const useModeratedSend = ({ receiverId, onSend }: UseModeratedSendOptions) => {
@@ -14,44 +13,54 @@ export const useModeratedSend = ({ receiverId, onSend }: UseModeratedSendOptions
 
   const sendWithModeration = useCallback(
     async (text: string) => {
-      if (!text.trim()) return;
+      if (!text.trim() || checking) return;
 
       setChecking(true);
       try {
-        const result = await moderationCheck.mutateAsync({
-          text,
-          receiverId,
-        });
+        const result = await moderationCheck.mutateAsync({ text, receiverId });
+        const data = result?.data?.data ?? result?.data ?? result;
+        const severity = data?.severity;
 
-        if (result?.data?.allowed) {
-          // امن → ارسال مستقیم
-          onSend(text);
-        } else {
-          // خطرناک → هشدار
+        if (data?.allowed === true) {
+          onSend(text, false);
+          return;
+        }
+
+        if (severity === 'medium') {
           Alert.alert(
             'هشدار محتوایی',
-            `این پیام ممکن است مشکل‌دار باشد (شدت: ${result.data.severity}).\nآیا مطمئن هستید؟`,
+            'این پیام نیازمند تأیید آگاهانه شماست. مسئولیت ارسال پیام پس از پذیرش هشدار با شماست.',
             [
               { text: 'ویرایش', style: 'cancel' },
               {
-                text: 'ارسال با ریسک',
-                onPress: () => onSend(text),
+                text: 'می‌پذیرم و ارسال می‌کنم',
+                onPress: () => onSend(text, true),
                 style: 'destructive',
               },
             ],
           );
+          return;
         }
-      } catch (error) {
-        // خطای شبکه → پرسش از کاربر
-        Alert.alert('خطا', 'بررسی محتوا ممکن نیست. همچنان ارسال شود؟', [
-          { text: 'لغو' },
-          { text: 'بله', onPress: () => onSend(text) },
+
+        const message =
+          severity === 'high' || severity === 'critical'
+            ? 'این پیام به دلیل محتوای پرخطر قابل ارسال نیست. متن را ویرایش کنید.'
+            : 'بررسی امنیتی موقتاً در دسترس نیست؛ پیام ارسال نشد. بعداً دوباره تلاش کنید.';
+
+        Alert.alert('ارسال پیام ممکن نیست', message, [
+          { text: 'ویرایش', style: 'cancel' },
         ]);
+      } catch {
+        Alert.alert(
+          'بررسی امنیتی ناموفق بود',
+          'به دلیل ناموفق بودن بررسی محتوا، پیام ارسال نشد. پس از برقراری سرویس دوباره تلاش کنید.',
+          [{ text: 'باشه', style: 'cancel' }],
+        );
       } finally {
         setChecking(false);
       }
     },
-    [receiverId, moderationCheck, onSend],
+    [receiverId, moderationCheck, onSend, checking],
   );
 
   return { sendWithModeration, checking };
