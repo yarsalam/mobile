@@ -7,6 +7,7 @@ interface SendMessageVariables {
   receiverId: number;
   content: string;
   tempId: number;
+  acceptModerationWarning?: boolean;
   from_id?: number;
   to_id?: number;
   read_at?: null;
@@ -20,6 +21,7 @@ export const useSendMessage = () => {
       return sendMessage({
         to_id: variables.receiverId,
         content: variables.content,
+        acceptModerationWarning: variables.acceptModerationWarning,
       });
     },
     // این متد قبل از mutationFn فراخوانی می‌شود و امکان optimistic update را می‌دهد
