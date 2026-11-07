@@ -226,7 +226,7 @@ const ChatScreen = ({route}) => {
 
   // ═══ LONG PRESS ═══
   const handleLongPress = useCallback(
-    (messageId: number, content: string, isOwn: boolean, isRead: boolean) => {
+    (messageId: number, content: string, isOwn: boolean, _isRead: boolean) => {
       if (!isOwn) return;
       const msg = messages.find(
         (m: any) => m.id === messageId || m.tempId === messageId,
