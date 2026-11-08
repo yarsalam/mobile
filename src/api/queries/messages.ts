@@ -3,10 +3,20 @@ import {fetchWithAuth} from '../../lib/fetchWithAuth';
 export const fetchMessages = (targetId: number, page: number) =>
   fetchWithAuth(`/messages/conversation/${targetId}?page=${page}&limit=20`);
 
-export const sendMessage = (body: {to_id: number; content: string}) =>
+export const sendMessage = (body: {
+  to_id: number;
+  content: string;
+  acceptModerationWarning?: boolean;
+}) =>
   fetchWithAuth('/messages', {
     method: 'POST',
-    body: JSON.stringify({to_id: body.to_id, content: body.content}),
+    body: JSON.stringify({
+      to_id: body.to_id,
+      content: body.content,
+      ...(body.acceptModerationWarning === true
+        ? {acceptModerationWarning: true}
+        : {}),
+    }),
   });
 
 export const editMessage = (body: {messageId: number; content: string}) =>
