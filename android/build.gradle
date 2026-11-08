@@ -9,7 +9,11 @@ buildscript {
     }
     repositories {
         maven { url "https://maven.aliyun.com/repository/google" }
-        maven { url "https://maven.aliyun.com/repository/central" }
+        maven {
+            url "https://maven.aliyun.com/repository/central"
+            // Prefer Maven Central artifacts over Gradle module metadata URLs that redirect to GitHub Releases.
+            metadataSources { mavenPom(); artifact() }
+        }
         google()
         mavenCentral()
     }
