@@ -137,11 +137,17 @@ jobs:
           path.write_text(chr(10).join(lines) + chr(10))
           PY
 
-      - name: Lint (non-blocking for test APK)
+      - name: Lint OCEAN consent UI changes (blocking)
+        run: npx eslint src/api/mutations/assistant/personalityTextHooks.ts src/api/mutations/assistant/personalityTextHooks.test.ts src/pages/assistant/AiAdvice.tsx
+
+      - name: Audit repository-wide lint baseline (non-blocking)
         run: npm run lint
         continue-on-error: true
 
-      - name: Run Jest tests (non-blocking for test APK)
+      - name: Run OCEAN consent API tests (blocking)
+        run: npm test -- --runInBand src/api/mutations/assistant/personalityTextHooks.test.ts
+
+      - name: Audit repository-wide Jest baseline (non-blocking)
         run: npm test -- --runInBand --passWithNoTests
         continue-on-error: true
 
