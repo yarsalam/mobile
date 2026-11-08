@@ -136,7 +136,7 @@ const ChatScreen = ({route}) => {
 
   // ═══ SEND / EDIT ═══
   const proceedToSend = useCallback(
-    (text: string) => {
+    (text: string, acceptModerationWarning = false) => {
       if (!authUser?.id) return;
 
       if (editingMessageId) {
@@ -159,7 +159,7 @@ const ChatScreen = ({route}) => {
       } else {
         const tempId = Date.now() + Math.random();
         sendMutation.mutate(
-          {senderId: authUser.id, receiverId: userId, content: text, tempId},
+          {senderId: authUser.id, receiverId: userId, content: text, tempId, acceptModerationWarning},
           {
             onSuccess: () => setInputText(''),
             onError: (e: any) =>
