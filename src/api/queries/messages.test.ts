@@ -1,5 +1,5 @@
 import {fetchWithAuth} from '../../lib/fetchWithAuth';
-import {sendMessage} from './messages';
+import {editMessage, sendMessage} from './messages';
 
 jest.mock('../../lib/fetchWithAuth', () => ({
   fetchWithAuth: jest.fn(),
@@ -40,7 +40,6 @@ describe('sendMessage moderation acknowledgement', () => {
   });
 
   it('passes explicit moderation acknowledgement when editing a message', async () => {
-    const {editMessage} = await import('./messages');
     await editMessage({
       messageId: 19,
       content: 'متن ویرایش‌شده',
