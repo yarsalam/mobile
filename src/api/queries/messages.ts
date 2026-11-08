@@ -19,10 +19,19 @@ export const sendMessage = (body: {
     }),
   });
 
-export const editMessage = (body: {messageId: number; content: string}) =>
+export const editMessage = (body: {
+  messageId: number;
+  content: string;
+  acceptModerationWarning?: boolean;
+}) =>
   fetchWithAuth(`/messages/${body.messageId}`, {
     method: 'PATCH',
-    body: JSON.stringify({content: body.content}),
+    body: JSON.stringify({
+      content: body.content,
+      ...(body.acceptModerationWarning === true
+        ? {acceptModerationWarning: true}
+        : {}),
+    }),
   });
 
 export const reportMessage = (messageId: number) =>
