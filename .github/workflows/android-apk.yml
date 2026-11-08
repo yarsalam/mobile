@@ -9,6 +9,9 @@ on:
       - "android/**"
       - "package.json"
       - "package-lock.json"
+      - "jest.config.js"
+      - "jest.setup.js"
+      - "__tests__/**"
       - "app.json"
   pull_request:
     branches: [main]
@@ -17,6 +20,9 @@ on:
       - "android/**"
       - "package.json"
       - "package-lock.json"
+      - "jest.config.js"
+      - "jest.setup.js"
+      - "__tests__/**"
       - "app.json"
   workflow_dispatch:
     inputs:
