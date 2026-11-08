@@ -36,7 +36,6 @@ export default function TextPersonalityAnalysisCard() {
   const consentMutation = useSetTextAnalysisConsent();
   const estimateMutation = useRunTextOceanEstimate();
 
-  const consent = consentQuery.data;
   const assessment = unwrapAssessment(estimateQuery.data);
 
   const enableConsent = () => {
