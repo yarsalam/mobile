@@ -38,4 +38,21 @@ describe('sendMessage moderation acknowledgement', () => {
       body: JSON.stringify({to_id: 8, content: 'متن پیام'}),
     });
   });
+
+  it('passes explicit moderation acknowledgement when editing a message', async () => {
+    const {editMessage} = await import('./messages');
+    await editMessage({
+      messageId: 19,
+      content: 'متن ویرایش‌شده',
+      acceptModerationWarning: true,
+    });
+
+    expect(mockedFetch).toHaveBeenCalledWith('/messages/19', {
+      method: 'PATCH',
+      body: JSON.stringify({
+        content: 'متن ویرایش‌شده',
+        acceptModerationWarning: true,
+      }),
+    });
+  });
 });
