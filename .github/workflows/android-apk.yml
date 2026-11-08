@@ -38,7 +38,7 @@ on:
       release_tag:
         description: "Unique tag for an explicitly approved test prerelease"
         required: false
-        default: "test-v0.1.3"
+        default: "test-v0.1.4"
         type: string
       publish_prerelease:
         description: "Publish the test APK as a public GitHub prerelease (default off)"
