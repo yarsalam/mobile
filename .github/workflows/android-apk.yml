@@ -18,6 +18,8 @@ on:
       - "package.json"
       - "package-lock.json"
       - "app.json"
+      - "jest.config.js"
+      - "jest.setup.js"
       - ".github/workflows/android-apk.yml"
   workflow_dispatch:
     inputs:
