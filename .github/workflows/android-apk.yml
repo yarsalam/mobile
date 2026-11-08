@@ -18,6 +18,7 @@ on:
       - "package.json"
       - "package-lock.json"
       - "app.json"
+      - ".github/workflows/android-apk.yml"
   workflow_dispatch:
     inputs:
       api_base_url:
@@ -139,11 +140,9 @@ jobs:
 
       - name: Lint (non-blocking for test APK)
         run: npm run lint
-        continue-on-error: true
 
-      - name: Run Jest tests (non-blocking for test APK)
+      - name: Run Jest tests (blocking for test APK)
         run: npm test -- --runInBand --passWithNoTests
-        continue-on-error: true
 
       - name: Build standalone Android test APK (bundles JavaScript)
         run: |
