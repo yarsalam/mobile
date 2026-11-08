@@ -160,13 +160,13 @@ const PersonalityTextAnalysisCard = () => {
                   <GlobalText style={styles.personalityScore}>
                     {dimension?.score == null
                       ? 'شواهد کافی نیست'
-                      : Math.round(dimension.score * 100) + ' از ۱۰۰'}
+                      : Math.round(dimension.score * 100) + ' از ۱۰۰ (امتیاز خام)'}
                   </GlobalText>
                 </View>
                 {dimension && (
                   <>
                     <GlobalText style={styles.personalityMuted}>
-                      اطمینان مدل: غیرکالیبره و فاقد تفسیر احتمالاتی
+                      شاخص اطمینان مدل: {Math.round(dimension.confidence * 100)} از ۱۰۰؛ غیرکالیبره و احتمال نیست
                     </GlobalText>
                     {dimension.evidence.map((quote, index) => (
                       <GlobalText key={index} style={styles.personalityEvidence}>
