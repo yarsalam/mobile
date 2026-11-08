@@ -6,11 +6,12 @@ describe('getModerationDecision', () => {
   });
 
   it('requires confirmation for medium-risk content', () => {
-    expect(getModerationDecision({data: {allowed: false, severity: 'medium'}})).toBe('confirm');
+    expect(getModerationDecision({data: {allowed: false, severity: 'medium', requiresConfirmation: true}})).toBe('confirm');
   });
 
-  it('blocks high-risk content', () => {
-    expect(getModerationDecision({data: {allowed: false, severity: 'high'}})).toBe('block');
+  it('blocks high-risk content and medium content explicitly marked blocked', () => {
+    expect(getModerationDecision({data: {allowed: false, severity: 'high', blocked: true}})).toBe('block');
+    expect(getModerationDecision({data: {allowed: false, severity: 'medium', blocked: true}})).toBe('block');
   });
 
   it('fails closed when moderation is pending or unavailable', () => {
