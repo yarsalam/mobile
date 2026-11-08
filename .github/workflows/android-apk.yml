@@ -226,6 +226,20 @@ jobs:
           cd android
           ./gradlew --no-daemon --stacktrace assembleDebug
 
+      - name: Verify standalone JavaScript bundle is packaged
+        shell: bash
+        run: |
+          set -euo pipefail
+          OUT="android/app/build/outputs/apk/debug"
+          for apk in "$OUT/app-arm64-v8a-debug.apk" "$OUT/app-armeabi-v7a-debug.apk"; do
+            test -s "$apk"
+            if ! unzip -Z1 "$apk" | grep -Fxq "assets/index.android.bundle"; then
+              echo "::error::Standalone APK is missing assets/index.android.bundle: $apk"
+              exit 1
+            fi
+            echo "Verified embedded JS bundle: $apk"
+          done
+
       - name: Prepare per-ABI APKs and checksums
         shell: bash
         run: |
