@@ -105,6 +105,8 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 3
         versionName "1.0.2"
+        // Public API uses HTTPS; do not permit cleartext HTTP in any build variant.
+        manifestPlaceholders = [usesCleartextTraffic: "false"]
     }
 
     // Direct-download APKs are split by phone ABI to avoid bundling all
