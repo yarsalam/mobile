@@ -109,7 +109,7 @@ jobs:
             ...['critical','high','moderate','low','info'].map(k => `| ${k} | ${counts[k] ?? 0} |`),
             '',
             `Total: ${counts.total ?? 0}`
-          ].join('\\n');
+          ].join(String.fromCharCode(10));
           fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary);
           NODE
       - name: Upload mobile dependency audit report
