@@ -146,6 +146,22 @@ jobs:
       - name: Run Jest tests (blocking for test APK)
         run: npm test -- --runInBand --passWithNoTests
 
+      - name: Type-check and block errors in changed app features
+        shell: bash
+        run: |
+          set +e
+          npx tsc --noEmit --pretty false > /tmp/mobile-typecheck.log 2>&1
+          status=$?
+          set -e
+          cat /tmp/mobile-typecheck.log
+          if grep -E 'src/lib/useModeratedSend\\.ts|src/api/queries/messages\\.ts|src/api/mutations/messages/useSendMessage\\.ts|src/pages/messages/ChatScreen\\.tsx|src/api/mutations/assistant/aiAssistantHooks\\.ts|src/api/queries/aiAssistant\\.ts|src/pages/PersonalityPrivacyScreen\\.tsx|src/pages/SettingsScreen\\.tsx|src/components/user/InnerApp\\.tsx|types/rootStackParamList\\.ts' /tmp/mobile-typecheck.log; then
+            echo "TypeScript errors found in files changed for this release."
+            exit 1
+          fi
+          if [ "$status" -ne 0 ]; then
+            echo "::warning::Pre-existing TypeScript errors remain outside the changed release files."
+          fi
+
       - name: Build standalone Android test APK (bundles JavaScript)
         run: |
           cd android
