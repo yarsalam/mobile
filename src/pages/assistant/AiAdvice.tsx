@@ -6,6 +6,7 @@ import GlobalText from '../../components/GlobalText';
 import {useTheme} from '../../context/MainContext';
 import {useAdvice} from '../../api/mutations/assistant/aiAssistantHooks';
 import FeedbackWidget from '../../components/user/FeedbackWidget';
+import TextPersonalityAnalysisCard from '../../components/personality/TextPersonalityAnalysisCard';
 
 
 const AiAdvice = () => {
@@ -20,6 +21,7 @@ const AiAdvice = () => {
       <ScrollView contentContainerStyle={{padding: 16}}>
         <SectionWithLine text="مشاوره هوشمند" />
         <FeedbackWidget feature="assistant" context="guidance_123" />
+        <TextPersonalityAnalysisCard />
         {/* خلاصه */}
         <View style={[styles.card, {backgroundColor: theme.colors.card}]}>
           <GlobalText style={styles.sectionTitle}>خلاصه وضعیت</GlobalText>
