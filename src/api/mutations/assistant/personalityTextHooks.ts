@@ -44,34 +44,43 @@ export interface OceanTextEstimateResponse {
 const consentKey = ['personality', 'text-analysis-consent'];
 const estimateKey = ['personality', 'ocean', 'text-estimate'];
 
+export const getPersonalityTextConsent = async (): Promise<PersonalityTextConsent> => {
+  const {data} = await apiClient.get('/personality/text-analysis-consent');
+  return data;
+};
+
+export const getPersonalityTextEstimate = async (): Promise<OceanTextEstimateResponse> => {
+  const {data} = await apiClient.get('/personality/ocean/text-estimate');
+  return data;
+};
+
+export const setPersonalityTextConsent = async (enabled: boolean) => {
+  const {data} = await apiClient.patch('/personality/text-analysis-consent', {enabled});
+  return data as PersonalityTextConsent;
+};
+
+export const analyzePersonalityText = async () => {
+  const {data} = await apiClient.post('/personality/ocean/text-estimate');
+  return data as OceanTextAssessment;
+};
+
 export const usePersonalityTextConsent = () =>
   useQuery<PersonalityTextConsent>({
     queryKey: consentKey,
-    queryFn: async () => {
-      const {data} = await apiClient.get('/personality/text-analysis-consent');
-      return data;
-    },
+    queryFn: getPersonalityTextConsent,
   });
 
 export const usePersonalityTextEstimate = (enabled: boolean) =>
   useQuery<OceanTextEstimateResponse>({
     queryKey: estimateKey,
-    queryFn: async () => {
-      const {data} = await apiClient.get('/personality/ocean/text-estimate');
-      return data;
-    },
+    queryFn: getPersonalityTextEstimate,
     enabled,
   });
 
 export const useSetPersonalityTextConsent = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (enabled: boolean) => {
-      const {data} = await apiClient.patch('/personality/text-analysis-consent', {
-        enabled,
-      });
-      return data as PersonalityTextConsent;
-    },
+    mutationFn: setPersonalityTextConsent,
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({queryKey: consentKey}),
@@ -84,10 +93,7 @@ export const useSetPersonalityTextConsent = () => {
 export const useAnalyzePersonalityText = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async () => {
-      const {data} = await apiClient.post('/personality/ocean/text-estimate');
-      return data as OceanTextAssessment;
-    },
+    mutationFn: analyzePersonalityText,
     onSuccess: async () => {
       await queryClient.invalidateQueries({queryKey: estimateKey});
     },
