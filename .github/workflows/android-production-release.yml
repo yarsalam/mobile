@@ -1,0 +1,174 @@
+name: Android production signed release
+
+on:
+  workflow_dispatch:
+    inputs:
+      api_base_url:
+        description: "Public HTTPS API origin embedded in the production APK"
+        required: true
+        default: "https://api.yarsalam.top"
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: yarsalam-android-production-release
+  cancel-in-progress: false
+
+jobs:
+  signed-release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      API_BASE_URL: ${{ inputs.api_base_url }}
+    steps:
+      - name: Checkout selected source ref
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22.13.1"
+          cache: npm
+
+      - name: Set up Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+
+      - name: Install Android SDK packages used by the project
+        run: |
+          sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0" "ndk;27.1.12297006"
+
+      - name: Validate API URL
+        run: |
+          python3 - <<'PY'
+          import ipaddress
+          import os
+          import re
+          from urllib.parse import urlsplit
+          value = os.environ["API_BASE_URL"].strip()
+          if not re.fullmatch(r"https://[A-Za-z0-9.-]+(?::[0-9]+)?(?:/[^\\s]*)?", value):
+              raise SystemExit("API_BASE_URL must be an HTTPS URL with a valid hostname.")
+          parsed = urlsplit(value)
+          host = (parsed.hostname or "").rstrip(".").lower()
+          if not host or parsed.username or parsed.password:
+              raise SystemExit("API_BASE_URL must contain a valid public HTTPS hostname.")
+          if host in {"localhost", "localhost.localdomain"} or host.endswith(".local"):
+              raise SystemExit("LAN-only hosts are not allowed in a public APK.")
+          try:
+              ipaddress.ip_address(host)
+          except ValueError:
+              pass
+          else:
+              raise SystemExit("Use a public DNS hostname, not an IP address.")
+          from pathlib import Path
+          path = Path("src/config/api.ts")
+          lines = path.read_text().splitlines()
+          indexes = [i for i, line in enumerate(lines) if line.startswith("export const API_BASE_URL = ")]
+          if len(indexes) != 1:
+              raise SystemExit("Expected exactly one API_BASE_URL declaration.")
+          lines[indexes[0]] = "export const API_BASE_URL = " + repr(value) + ";"
+          path.write_text(chr(10).join(lines) + chr(10))
+          PY
+
+      - name: Install locked JavaScript dependencies
+        run: npm ci
+
+      - name: Normalize mislabeled WebP assets before Android resource compilation
+        run: |
+          python3 -m venv /tmp/image-fix-venv
+          /tmp/image-fix-venv/bin/python -m pip install --disable-pip-version-check Pillow
+          /tmp/image-fix-venv/bin/python - <<'PY'
+          from pathlib import Path
+          from PIL import Image
+          for path in Path("src").rglob("*.png"):
+              raw = path.read_bytes()
+              if raw.startswith(b"RIFF") and raw[8:12] == b"WEBP":
+                  with Image.open(path) as image:
+                      image.convert("RGBA" if "A" in image.getbands() else "RGB").save(path, format="PNG")
+          PY
+
+      - name: Lint changed release feature files
+        run: >
+          npx eslint
+          src/lib/useModeratedSend.ts
+          src/api/queries/messages.ts
+          src/api/mutations/messages/useSendMessage.ts
+          src/pages/messages/ChatScreen.tsx
+          src/api/mutations/assistant/aiAssistantHooks.ts
+          src/api/queries/aiAssistant.ts
+          src/pages/PersonalityPrivacyScreen.tsx
+          src/pages/SettingsScreen.tsx
+          src/components/user/InnerApp.tsx
+          types/rootStackParamList.ts
+
+      - name: Run Jest tests
+        run: npm test -- --runInBand --passWithNoTests
+
+      - name: Provision private Android signing keystore
+        env:
+          ANDROID_RELEASE_KEYSTORE_BASE64: ${{ secrets.ANDROID_RELEASE_KEYSTORE_BASE64 }}
+        run: |
+          set -euo pipefail
+          test -n "$ANDROID_RELEASE_KEYSTORE_BASE64" || {
+            echo "::error::Missing GitHub Actions secret ANDROID_RELEASE_KEYSTORE_BASE64"
+            exit 1
+          }
+          mkdir -p android/app
+          printf '%s' "$ANDROID_RELEASE_KEYSTORE_BASE64" | base64 --decode > android/app/release.keystore
+          chmod 600 android/app/release.keystore
+          test -s android/app/release.keystore
+
+      - name: Build production-signed APKs
+        working-directory: android
+        env:
+          ANDROID_RELEASE_STORE_FILE: app/release.keystore
+          ANDROID_RELEASE_STORE_PASSWORD: ${{ secrets.ANDROID_RELEASE_STORE_PASSWORD }}
+          ANDROID_RELEASE_KEY_ALIAS: ${{ secrets.ANDROID_RELEASE_KEY_ALIAS }}
+          ANDROID_RELEASE_KEY_PASSWORD: ${{ secrets.ANDROID_RELEASE_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          test -n "$ANDROID_RELEASE_STORE_PASSWORD"
+          test -n "$ANDROID_RELEASE_KEY_ALIAS"
+          test -n "$ANDROID_RELEASE_KEY_PASSWORD"
+          ./gradlew --no-daemon --stacktrace assembleRelease
+
+      - name: Verify APK signatures and prepare checksums
+        run: |
+          set -euo pipefail
+          OUT="android/app/build/outputs/apk/release"
+          test -s "$OUT/app-arm64-v8a-release.apk"
+          test -s "$OUT/app-armeabi-v7a-release.apk"
+          apksigner verify --verbose "$OUT/app-arm64-v8a-release.apk"
+          apksigner verify --verbose "$OUT/app-armeabi-v7a-release.apk"
+          mkdir -p dist
+          cp "$OUT/app-arm64-v8a-release.apk" dist/yarsalam-arm64-v8a.apk
+          cp "$OUT/app-armeabi-v7a-release.apk" dist/yarsalam-armeabi-v7a.apk
+          (
+            cd dist
+            sha256sum yarsalam-*.apk > SHA256SUMS.txt
+          )
+          git rev-parse HEAD > dist/SOURCE_COMMIT.txt
+          rm -f android/app/release.keystore
+
+      - name: Upload production-signed APKs for release review
+        uses: actions/upload-artifact@v7
+        with:
+          name: yarsalam-production-signed-apks
+          path: |
+            dist/yarsalam-arm64-v8a.apk
+            dist/yarsalam-armeabi-v7a.apk
+            dist/SHA256SUMS.txt
+            dist/SOURCE_COMMIT.txt
+          if-no-files-found: error
+          retention-days: 14
