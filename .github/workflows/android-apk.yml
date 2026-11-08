@@ -147,7 +147,7 @@ jobs:
       - name: Build standalone Android test APK (bundles JavaScript)
         run: |
           cd android
-          ./gradlew --no-daemon --stacktrace assembleRelease
+          ./gradlew --no-daemon --stacktrace -PallowDebugReleaseSigning=true assembleRelease
 
       - name: Prepare per-ABI APKs and checksums
         shell: bash
