@@ -11,7 +11,7 @@ const pendingKey = (userId: number, bundleCode: string) =>
   `yarsalam:pending-wallet-checkout:${userId}:${bundleCode}`;
 
 const createIdempotencyKey = () =>
-  `ys-wallet-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 14)}';
+  `ys-wallet-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 14)}`;
 
 /**
  * Keep one idempotency key per pending user+bundle checkout in persistent
