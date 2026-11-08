@@ -6,6 +6,7 @@ import GlobalText from '../../components/GlobalText';
 import {useTheme} from '../../context/MainContext';
 import {useAdvice} from '../../api/mutations/assistant/aiAssistantHooks';
 import FeedbackWidget from '../../components/user/FeedbackWidget';
+// Text-derived OCEAN is explicitly consent-gated and never used as a Matching signal.
 import TextPersonalityAnalysisCard from '../../components/personality/TextPersonalityAnalysisCard';
 
 
