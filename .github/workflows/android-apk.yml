@@ -52,7 +52,11 @@ on:
         type: string
 
 permissions:
-  contents: read
+  contents: write
+
+concurrency:
+  group: android-test-apk-${{ github.event.pull_request.head.ref || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build-test-apk:
@@ -62,10 +66,11 @@ jobs:
     env:
       API_BASE_URL: ${{ inputs.api_base_url || 'https://api.yarsalam.top' }}
     steps:
-      - name: Checkout source
+      - name: Checkout source branch
         uses: actions/checkout@v5
         with:
-          ref: ${{ inputs.source_ref || github.ref }}
+          ref: ${{ github.event.pull_request.head.ref || inputs.source_ref || github.ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Node.js
         uses: actions/setup-node@v6
@@ -91,6 +96,23 @@ jobs:
       - name: Install JavaScript dependencies
         run: npm ci
 
+      - name: Apply semver-compatible security fixes and persist the lockfile
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm audit fix
+          if ! git diff --quiet -- package.json package-lock.json; then
+            if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
+              git config user.name "github-actions[bot]"
+              git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+              git add package.json package-lock.json
+              git commit -m "fix(security): apply compatible npm audit remediations"
+              git push origin "HEAD:${GITHUB_HEAD_REF}"
+            else
+              echo "Dependency lockfile changed outside a PR; not pushing from this workflow."
+            fi
+          fi
+
       - name: Audit mobile production dependencies
         id: mobile-audit
         shell: bash
@@ -111,6 +133,10 @@ jobs:
             `Total: ${counts.total ?? 0}`
           ].join(String.fromCharCode(10));
           fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary);
+          if ((counts.critical ?? 0) > 0 || (counts.high ?? 0) > 0) {
+            console.error(`Blocking release build: ${counts.critical ?? 0} critical and ${counts.high ?? 0} high production dependency vulnerabilities remain.`);
+            process.exit(1);
+          }
           NODE
       - name: Upload mobile dependency audit report
         if: always()
