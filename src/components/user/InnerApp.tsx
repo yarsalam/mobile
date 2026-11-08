@@ -20,6 +20,7 @@ import SelectChannel from '../../pages/auth/SelectChannel';
 import WhatsAppActivation from '../../pages/auth/WhatsAppActivation';
 import SettingsScreen from '../../pages/SettingsScreen';
 import DisplaySettingsScreen from '../../pages/DisplaySettingsScreen';
+import PersonalityPrivacyScreen from '../../pages/PersonalityPrivacyScreen';
 import ChatScreen from '../../pages/messages/ChatScreen';
 import SupportListScreen from '../../pages/tickets/SupportListScreen';
 import CreateTicketScreen from '../../pages/tickets/CreateTicketScreen';
@@ -64,6 +65,7 @@ const InnerApp = ({initialRoute}: {initialRoute: keyof RootStackParamList}) => {
           <Stack.Screen name="Transactions" component={Transactions} />
           <Stack.Screen name="Basket" component={Basket} />
           <Stack.Screen name="Settings" component={SettingsScreen} />
+          <Stack.Screen name="PersonalityPrivacy" component={PersonalityPrivacyScreen} />
           <Stack.Screen name="Chat" component={ChatScreen} />
           <Stack.Screen name="Deposit" component={DepositScreen} />
           <Stack.Screen
