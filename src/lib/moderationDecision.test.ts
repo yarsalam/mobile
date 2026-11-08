@@ -11,7 +11,7 @@ describe('getModerationDecision', () => {
 
   it('blocks high-risk content and medium content explicitly marked blocked', () => {
     expect(getModerationDecision({data: {allowed: false, severity: 'high', blocked: true}})).toBe('block');
-    expect(getModerationDecision({data: {allowed: false, severity: 'medium', blocked: true}})).toBe('block');
+    expect(getModerationDecision({data: {allowed: false, severity: 'medium', requiresConfirmation: true, blocked: true}})).toBe('block');
   });
 
   it('fails closed when moderation is pending or unavailable', () => {
