@@ -147,9 +147,8 @@ jobs:
       - name: Run wallet checkout Jest tests (blocking)
         run: npm test -- --runInBand src/api/mutations/payment/useBuyWithWallet.test.ts src/api/queries/aiAssistant.test.ts src/lib/moderationDecision.test.ts src/api/queries/messages.test.ts
 
-      - name: Audit repository-wide Jest baseline (non-blocking)
+      - name: Run full Jest suite (blocking)
         run: npm test -- --runInBand --passWithNoTests
-        continue-on-error: true
 
       - name: Build standalone Android test APK (bundles JavaScript)
         run: |
