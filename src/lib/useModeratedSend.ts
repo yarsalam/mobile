@@ -41,12 +41,13 @@ export const useModeratedSend = ({ receiverId, onSend }: UseModeratedSendOptions
             ],
           );
         }
-      } catch (error) {
-        // خطای شبکه → پرسش از کاربر
-        Alert.alert('خطا', 'بررسی محتوا ممکن نیست. همچنان ارسال شود؟', [
-          { text: 'لغو' },
-          { text: 'بله', onPress: () => onSend(text) },
-        ]);
+      } catch {
+        // Fail closed: when moderation is unavailable, do not offer a client-side bypass.
+        Alert.alert(
+          'بررسی محتوا در دسترس نیست',
+          'برای حفظ امنیت، پیام تا زمان موفقیت بررسی محتوا ارسال نمی‌شود. لطفاً بعداً دوباره تلاش کنید.',
+          [{text: 'باشه'}],
+        );
       } finally {
         setChecking(false);
       }
