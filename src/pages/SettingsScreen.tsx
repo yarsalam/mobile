@@ -24,6 +24,13 @@ const SettingsScreen: React.FC = () => {
           <Text style={[styles.arrow, { color: theme.colors.arrowColor }]}>›</Text>
           <Text style={[styles.optionText, { color: theme.colors.text }]}>تنظیمات نمایش</Text>
         </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.option, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}
+          onPress={() => navigation.navigate('PersonalityPrivacy')}
+        >
+          <Text style={[styles.arrow, { color: theme.colors.arrowColor }]}>›</Text>
+          <Text style={[styles.optionText, { color: theme.colors.text }]}>تحلیل شخصیت و حریم خصوصی</Text>
+        </TouchableOpacity>
         {/* گزینه‌های دیگر تنظیمات در آینده */}
       </View>
     </MainLayout>

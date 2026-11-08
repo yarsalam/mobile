@@ -25,6 +25,7 @@ import ChatBubble from '../../components/message/ChatBubble';
 import {useModeratedSend} from '../../lib/useModeratedSend';
 import {useQueryClient} from '@tanstack/react-query';
 import {useChatMessages} from '../../api/mutations/messages/useChatMessages';
+import {useSuggestReply} from '../../api/mutations/assistant/aiAssistantHooks';
 
 // ═══ HELPERS ═══
 const getChatRoom = (a: number, b: number) =>
@@ -56,6 +57,7 @@ const ChatScreen = ({route}) => {
   const editMutation = useEditMessage();
   const reportMutation = useReportMessage();
   const deleteMutation = useDeleteSingleMessage();
+  const suggestReplyMutation = useSuggestReply();
   const {socket} = useSocket();
 
   // ═══ DERIVED ═══
@@ -118,7 +120,7 @@ const ChatScreen = ({route}) => {
 
   // ═══ SEND / EDIT ═══
   const proceedToSend = useCallback(
-    (text: string) => {
+    (text: string, acknowledged = false) => {
       if (!authUser?.id) return;
 
       if (editingMessageId) {
@@ -141,7 +143,7 @@ const ChatScreen = ({route}) => {
       } else {
         const tempId = Date.now() + Math.random();
         sendMutation.mutate(
-          {senderId: authUser.id, receiverId: userId, content: text, tempId},
+          {senderId: authUser.id, receiverId: userId, content: text, tempId, acceptModerationWarning: acknowledged},
           {
             onSuccess: () => setInputText(''),
             onError: (e: any) =>
@@ -173,6 +175,63 @@ const ChatScreen = ({route}) => {
     if (!inputText.trim()) return;
     sendWithModeration(inputText);
   }, [inputText, sendWithModeration]);
+
+  const handleSuggestReply = useCallback(() => {
+    if (!authUser?.id || suggestReplyMutation.isPending || editingMessageId) return;
+
+    const latestIncoming = messages
+      .filter(
+        (item: any) =>
+          item.from_id === userId &&
+          item.to_id === authUser.id &&
+          !item.deleted_to &&
+          item.clientStatus !== 'sending',
+      )
+      .sort(
+        (a: any, b: any) =>
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+      )[0];
+
+    if (!latestIncoming?.content) {
+      showModal('پیشنهاد پاسخ', 'برای این گفتگو پیام دریافتی جدیدی پیدا نشد.', [
+        {text: 'باشه', onPress: hideModal},
+      ]);
+      return;
+    }
+
+    suggestReplyMutation.mutate(
+      {targetUserId: userId, message: latestIncoming.content},
+      {
+        onSuccess: (result: any) => {
+          const reply = result?.reply?.trim();
+          if (reply) {
+            setInputText(reply);
+            setEditingMessageId(null);
+            return;
+          }
+          showModal(
+            'پیشنهاد پاسخ',
+            'این قابلیت برای حساب‌های دارای اشتراک دستیار هوشمند فعال است یا در حال حاضر پیشنهادی تولید نشد.',
+            [{text: 'باشه', onPress: hideModal}],
+          );
+        },
+        onError: (error: any) =>
+          showModal(
+            'پیشنهاد پاسخ ناموفق بود',
+            error?.message || 'لطفاً دوباره تلاش کنید.',
+            [{text: 'باشه', onPress: hideModal}],
+          ),
+      },
+    );
+  }, [
+    authUser?.id,
+    userId,
+    messages,
+    suggestReplyMutation,
+    editingMessageId,
+    showModal,
+    hideModal,
+  ]);
 
   // ═══ DELETE ═══
   const handleDelete = useCallback(
@@ -226,7 +285,7 @@ const ChatScreen = ({route}) => {
 
   // ═══ LONG PRESS ═══
   const handleLongPress = useCallback(
-    (messageId: number, content: string, isOwn: boolean, isRead: boolean) => {
+    (messageId: number, content: string, isOwn: boolean, _isRead: boolean) => {
       if (!isOwn) return;
       const msg = messages.find(
         (m: any) => m.id === messageId || m.tempId === messageId,
@@ -330,7 +389,38 @@ const ChatScreen = ({route}) => {
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={90}>
-        <View style={styles.inputBar}>
+        <View style={styles.composerArea}>
+          <View style={styles.copilotRow}>
+            <TouchableOpacity
+              onPress={handleSuggestReply}
+              style={[
+                styles.copilotButton,
+                (suggestReplyMutation.isPending || editingMessageId !== null) &&
+                  styles.copilotButtonDisabled,
+              ]}
+              disabled={
+                suggestReplyMutation.isPending ||
+                editingMessageId !== null ||
+                !messages.some(
+                  (item: any) =>
+                    item.from_id === userId &&
+                    item.to_id === authUser?.id &&
+                    !item.deleted_to,
+                )
+              }>
+              {suggestReplyMutation.isPending ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <GlobalText style={styles.copilotButtonText}>
+                  ✨ پیشنهاد پاسخ هوشمند
+                </GlobalText>
+              )}
+            </TouchableOpacity>
+            <GlobalText style={styles.copilotDisclosure}>
+              با درخواست شما، چند پیام اخیر همین گفتگو برای پیشنهاد پاسخ به سرویس هوش مصنوعی ارسال می‌شود؛ پیام خودکار فرستاده نمی‌شود.
+            </GlobalText>
+          </View>
+          <View style={styles.inputBar}>
           <TextInput
             value={inputText}
             onChangeText={setInputText}
@@ -351,6 +441,7 @@ const ChatScreen = ({route}) => {
               <GlobalText style={styles.sendIcon}>📨</GlobalText>
             )}
           </TouchableOpacity>
+          </View>
         </View>
       </KeyboardAvoidingView>
 
@@ -419,6 +510,42 @@ const getStyles = (theme: any) =>
       marginRight: 10,
     },
     empty: {textAlign: 'center', marginTop: 20},
+    composerArea: {
+      backgroundColor: theme.colors.background,
+      borderTopWidth: 1,
+      borderTopColor: theme.colors.border,
+      paddingTop: 8,
+    },
+    copilotRow: {
+      flexDirection: 'row-reverse',
+      alignItems: 'center',
+      paddingHorizontal: 10,
+      paddingBottom: 6,
+      gap: 8,
+    },
+    copilotButton: {
+      minHeight: 34,
+      borderRadius: 17,
+      paddingHorizontal: 12,
+      backgroundColor: theme.colors.primary,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    copilotButtonDisabled: {
+      opacity: 0.55,
+    },
+    copilotButtonText: {
+      color: '#fff',
+      fontSize: 12,
+      fontWeight: '600',
+    },
+    copilotDisclosure: {
+      flex: 1,
+      fontSize: 10,
+      color: theme.colors.text,
+      opacity: 0.62,
+      textAlign: 'right',
+    },
     inputBar: {
       flexDirection: 'row-reverse',
       alignItems: 'flex-end',

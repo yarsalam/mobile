@@ -18,6 +18,9 @@ on:
       - "package.json"
       - "package-lock.json"
       - "app.json"
+      - "jest.config.js"
+      - "jest.setup.js"
+      - ".github/workflows/android-apk.yml"
   workflow_dispatch:
     inputs:
       api_base_url:
@@ -137,18 +140,32 @@ jobs:
           path.write_text(chr(10).join(lines) + chr(10))
           PY
 
-      - name: Lint (non-blocking for test APK)
-        run: npm run lint
-        continue-on-error: true
+      - name: Lint (blocking on changed feature files)
+        run: npx eslint src/lib/useModeratedSend.ts src/api/queries/messages.ts src/api/mutations/messages/useSendMessage.ts src/pages/messages/ChatScreen.tsx src/api/mutations/assistant/aiAssistantHooks.ts src/api/queries/aiAssistant.ts src/pages/PersonalityPrivacyScreen.tsx src/pages/SettingsScreen.tsx src/components/user/InnerApp.tsx types/rootStackParamList.ts
 
-      - name: Run Jest tests (non-blocking for test APK)
+      - name: Run Jest tests (blocking for test APK)
         run: npm test -- --runInBand --passWithNoTests
-        continue-on-error: true
+
+      - name: Type-check and block errors in changed app features
+        shell: bash
+        run: |
+          set +e
+          npx tsc --noEmit --pretty false > /tmp/mobile-typecheck.log 2>&1
+          status=$?
+          set -e
+          cat /tmp/mobile-typecheck.log
+          if grep -E 'src/lib/useModeratedSend\\.ts|src/api/queries/messages\\.ts|src/api/mutations/messages/useSendMessage\\.ts|src/pages/messages/ChatScreen\\.tsx|src/api/mutations/assistant/aiAssistantHooks\\.ts|src/api/queries/aiAssistant\\.ts|src/pages/PersonalityPrivacyScreen\\.tsx|src/pages/SettingsScreen\\.tsx|src/components/user/InnerApp\\.tsx|types/rootStackParamList\\.ts' /tmp/mobile-typecheck.log; then
+            echo "TypeScript errors found in files changed for this release."
+            exit 1
+          fi
+          if [ "$status" -ne 0 ]; then
+            echo "::warning::Pre-existing TypeScript errors remain outside the changed release files."
+          fi
 
       - name: Build standalone Android test APK (bundles JavaScript)
         run: |
           cd android
-          ./gradlew --no-daemon --stacktrace assembleRelease
+          ./gradlew --no-daemon --stacktrace -PallowDebugReleaseSigning=true assembleRelease
 
       - name: Prepare per-ABI APKs and checksums
         shell: bash

@@ -59,6 +59,20 @@ react {
  */
 def enableProguardInReleaseBuilds = false
 
+// Production APKs must be signed with a private release keystore supplied by
+// GitHub Actions secrets. Debug signing is permitted only when a workflow
+// explicitly passes -PallowDebugReleaseSigning=true for a test artifact.
+def releaseSigning = [
+    storeFile: System.getenv("ANDROID_RELEASE_STORE_FILE"),
+    storePassword: System.getenv("ANDROID_RELEASE_STORE_PASSWORD"),
+    keyAlias: System.getenv("ANDROID_RELEASE_KEY_ALIAS"),
+    keyPassword: System.getenv("ANDROID_RELEASE_KEY_PASSWORD"),
+]
+def hasReleaseSigning = releaseSigning.values().every { value ->
+    value != null && !value.trim().isEmpty()
+}
+def allowDebugReleaseSigning = project.findProperty("allowDebugReleaseSigning") == "true"
+
 /**
  * The preferred build flavor of JavaScriptCore (JSC)
  *
@@ -103,15 +117,29 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
+        if (hasReleaseSigning) {
+            release {
+                storeFile file(releaseSigning.storeFile)
+                storePassword releaseSigning.storePassword
+                keyAlias releaseSigning.keyAlias
+                keyPassword releaseSigning.keyPassword
+            }
+        }
     }
     buildTypes {
         debug {
             signingConfig signingConfigs.debug
         }
         release {
-            // Caution! In production, you need to generate your own keystore file.
-            // see https://reactnative.dev/docs/signed-apk-android.
-            signingConfig signingConfigs.debug
+            if (hasReleaseSigning) {
+                signingConfig signingConfigs.release
+            } else if (allowDebugReleaseSigning) {
+                signingConfig signingConfigs.debug
+            } else {
+                throw new GradleException(
+                    "Production release signing is required. Configure ANDROID_RELEASE_STORE_FILE, ANDROID_RELEASE_STORE_PASSWORD, ANDROID_RELEASE_KEY_ALIAS and ANDROID_RELEASE_KEY_PASSWORD. Use -PallowDebugReleaseSigning=true only for non-production test APKs."
+                )
+            }
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
         }
