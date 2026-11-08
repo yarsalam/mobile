@@ -7,6 +7,6 @@ export type ModerationDecision = 'allow' | 'confirm' | 'block';
  */
 export const getModerationDecision = (result: any): ModerationDecision => {
   if (result?.data?.allowed === true) return 'allow';
-  if (result?.data?.severity === 'medium') return 'confirm';
+  if (result?.data?.requiresConfirmation === true) return 'confirm';
   return 'block';
 };
