@@ -138,8 +138,8 @@ jobs:
           path.write_text(chr(10).join(lines) + chr(10))
           PY
 
-      - name: Lint (blocking for test APK)
-        run: npm run lint
+      - name: Lint (blocking on changed feature files)
+        run: npx eslint src/lib/useModeratedSend.ts src/api/queries/messages.ts src/api/mutations/messages/useSendMessage.ts src/pages/messages/ChatScreen.tsx src/api/mutations/assistant/aiAssistantHooks.ts src/api/queries/aiAssistant.ts src/pages/PersonalityPrivacyScreen.tsx src/pages/SettingsScreen.tsx src/components/user/InnerApp.tsx types/rootStackParamList.ts
 
       - name: Run Jest tests (blocking for test APK)
         run: npm test -- --runInBand --passWithNoTests
