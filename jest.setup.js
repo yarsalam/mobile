@@ -27,9 +27,30 @@ jest.mock('react-native-background-fetch', () => ({
   NETWORK_TYPE_ANY: 1,
 }));
 
-jest.mock('@react-native-async-storage/async-storage', () =>
-  require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
-);
+jest.mock('@react-native-async-storage/async-storage', () => {
+  const values = new Map<string, string>();
+  const storage = {
+    getItem: jest.fn(async (key: string) => values.get(key) ?? null),
+    setItem: jest.fn(async (key: string, value: string) => {
+      values.set(key, value);
+    }),
+    removeItem: jest.fn(async (key: string) => {
+      values.delete(key);
+    }),
+    clear: jest.fn(async () => values.clear()),
+    getAllKeys: jest.fn(async () => Array.from(values.keys())),
+    multiGet: jest.fn(async (keys: string[]) =>
+      keys.map(key => [key, values.get(key) ?? null]),
+    ),
+    multiSet: jest.fn(async (pairs: [string, string][]) => {
+      pairs.forEach(([key, value]) => values.set(key, value));
+    }),
+    multiRemove: jest.fn(async (keys: string[]) => {
+      keys.forEach(key => values.delete(key));
+    }),
+  };
+  return {__esModule: true, default: storage, ...storage};
+});
 
 jest.mock('react-native-screens', () =>
   require('react-native-screens/mock'),
