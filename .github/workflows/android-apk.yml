@@ -154,20 +154,20 @@ jobs:
       - name: Build standalone Android test APK (bundles JavaScript)
         run: |
           cd android
-          ./gradlew --no-daemon --stacktrace assembleRelease
+          ./gradlew --no-daemon --stacktrace assembleDebug
 
       - name: Prepare per-ABI APKs and checksums
         shell: bash
         run: |
           set -euo pipefail
-          OUT="android/app/build/outputs/apk/release"
+          OUT="android/app/build/outputs/apk/debug"
           mkdir -p dist
-          test -s "$OUT/app-arm64-v8a-release.apk"
-          test -s "$OUT/app-armeabi-v7a-release.apk"
-          cp "$OUT/app-arm64-v8a-release.apk" dist/yarsalam-arm64-v8a.apk
-          cp "$OUT/app-armeabi-v7a-release.apk" dist/yarsalam-armeabi-v7a.apk
+          test -s "$OUT/app-arm64-v8a-debug.apk"
+          test -s "$OUT/app-armeabi-v7a-debug.apk"
+          cp "$OUT/app-arm64-v8a-release.apk" dist/yarsalam-test-arm64-v8a.apk
+          cp "$OUT/app-armeabi-v7a-release.apk" dist/yarsalam-test-armeabi-v7a.apk
           cd dist
-          sha256sum yarsalam-arm64-v8a.apk yarsalam-armeabi-v7a.apk > SHA256SUMS.txt
+          sha256sum yarsalam-test-arm64-v8a.apk yarsalam-test-armeabi-v7a.apk > SHA256SUMS.txt
           git rev-parse HEAD > SOURCE_COMMIT.txt
           echo "Individual downloadable APK sizes:"
           du -h yarsalam-*.apk
@@ -217,7 +217,7 @@ jobs:
 
           Download yarsalam-arm64-v8a.apk for most modern Android phones (64-bit ARM). If it is not compatible with the device, try yarsalam-armeabi-v7a.apk (32-bit ARM).
 
-          These APKs bundle JavaScript and do not require Metro. They are signed with the repository debug key for testing, not a production signing key. They use the HTTPS API URL supplied to the workflow. Do not use them for a public production rollout.
+          These APKs bundle JavaScript and do not require Metro. They are debug-signed test artifacts, not production release APKs. Production releases require the private owner-controlled keystore and the signed release workflow.
           NOTES
           # Each release run needs a unique tag; existing tags are not overwritten.
           gh release create "$RELEASE_TAG" \
