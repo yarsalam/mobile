@@ -91,6 +91,36 @@ jobs:
       - name: Install JavaScript dependencies
         run: npm ci
 
+      - name: Audit mobile production dependencies
+        id: mobile-audit
+        shell: bash
+        run: |
+          mkdir -p security-report
+          npm audit --omit=dev --json > security-report/npm-audit-production.json || true
+          node <<'NODE'
+          const fs = require('node:fs');
+          const report = JSON.parse(fs.readFileSync('security-report/npm-audit-production.json', 'utf8'));
+          const counts = report.metadata?.vulnerabilities ?? {};
+          const summary = [
+            '## Mobile production dependency audit',
+            '',
+            '| Severity | Count |',
+            '|---|---:|',
+            ...['critical','high','moderate','low','info'].map(k => `| ${k} | ${counts[k] ?? 0} |`),
+            '',
+            `Total: ${counts.total ?? 0}`
+          ].join('\\n');
+          fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary);
+          NODE
+      - name: Upload mobile dependency audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: yarsalam-mobile-dependency-audit
+          path: security-report/npm-audit-production.json
+          retention-days: 30
+          if-no-files-found: ignore
+
       - name: Normalize mislabeled WebP images before Android resource compilation
         run: |
           python3 -m venv /tmp/image-fix-venv
