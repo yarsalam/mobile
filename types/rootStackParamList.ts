@@ -24,6 +24,7 @@ export type RootStackParamList = {
   Basket: undefined;
   Settings: undefined;
   DisplaySettings: undefined;
+  PersonalityPrivacy: undefined;
   Chat: {userId: number; nickname: string};
   SupportList: undefined;
   CreateTicket: undefined;
