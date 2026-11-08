@@ -28,10 +28,10 @@ jest.mock('react-native-background-fetch', () => ({
 }));
 
 jest.mock('@react-native-async-storage/async-storage', () => {
-  const values = new Map<string, string>();
+  const values = new Map();
   const storage = {
-    getItem: jest.fn(async (key: string) => values.get(key) ?? null),
-    setItem: jest.fn(async (key: string, value: string) => {
+    getItem: jest.fn(async (key) => values.get(key) ?? null),
+    setItem: jest.fn(async (key, value) => {
       values.set(key, value);
     }),
     removeItem: jest.fn(async (key: string) => {
@@ -39,10 +39,10 @@ jest.mock('@react-native-async-storage/async-storage', () => {
     }),
     clear: jest.fn(async () => values.clear()),
     getAllKeys: jest.fn(async () => Array.from(values.keys())),
-    multiGet: jest.fn(async (keys: string[]) =>
+    multiGet: jest.fn(async (keys) =>
       keys.map(key => [key, values.get(key) ?? null]),
     ),
-    multiSet: jest.fn(async (pairs: [string, string][]) => {
+    multiSet: jest.fn(async (pairs) => {
       pairs.forEach(([key, value]) => values.set(key, value));
     }),
     multiRemove: jest.fn(async (keys: string[]) => {
