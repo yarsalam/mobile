@@ -6,7 +6,9 @@ on:
     paths:
       - "src/lib/useModeratedSend.ts"
       - "src/api/queries/messages.ts"
+      - "src/api/queries/aiAssistant.ts"
       - "src/api/mutations/messages/useSendMessage.ts"
+      - "src/api/mutations/assistant/aiAssistantHooks.ts"
       - "src/pages/messages/ChatScreen.tsx"
       - "src/pages/PersonalityPrivacyScreen.tsx"
       - "src/pages/SettingsScreen.tsx"
@@ -30,4 +32,4 @@ jobs:
       - name: Install locked dependencies
         run: npm ci
       - name: Lint changed chat and moderation files
-        run: npx eslint src/lib/useModeratedSend.ts src/api/queries/messages.ts src/api/mutations/messages/useSendMessage.ts src/pages/messages/ChatScreen.tsx src/pages/PersonalityPrivacyScreen.tsx src/pages/SettingsScreen.tsx src/components/user/InnerApp.tsx
+        run: npx eslint src/lib/useModeratedSend.ts src/api/queries/messages.ts src/api/mutations/messages/useSendMessage.ts src/pages/messages/ChatScreen.tsx src/api/mutations/assistant/aiAssistantHooks.ts src/api/queries/aiAssistant.ts src/pages/PersonalityPrivacyScreen.tsx src/pages/SettingsScreen.tsx src/components/user/InnerApp.tsx types/rootStackParamList.ts
