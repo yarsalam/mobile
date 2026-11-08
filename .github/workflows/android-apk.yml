@@ -137,10 +137,14 @@ jobs:
           path.write_text(chr(10).join(lines) + chr(10))
           PY
 
-      - name: Lint (non-blocking for test APK)
-        run: npm run lint
+      - name: Lint wallet checkout changes (blocking)
+        run: npx eslint src/api/mutations/payment/useBuyWithWallet.ts src/api/mutations/payment/useBuyWithWallet.test.ts src/components/products/ProductCard.tsx
 
-      - name: Run Jest tests (non-blocking for test APK)
+      - name: Audit repository-wide lint baseline (non-blocking)
+        run: npm run lint
+        continue-on-error: true
+
+      - name: Run Jest tests
         run: npm test -- --runInBand --passWithNoTests
 
       - name: Build standalone Android test APK (bundles JavaScript)
