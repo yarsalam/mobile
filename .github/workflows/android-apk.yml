@@ -138,7 +138,7 @@ jobs:
           path.write_text(chr(10).join(lines) + chr(10))
           PY
 
-      - name: Lint (non-blocking for test APK)
+      - name: Lint (blocking for test APK)
         run: npm run lint
 
       - name: Run Jest tests (blocking for test APK)
