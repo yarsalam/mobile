@@ -1,5 +1,6 @@
 module.exports = {
   preset: '@react-native/jest-preset',
+  setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   // React Navigation and several React Native packages publish ESM. Transform
   // those packages with the React Native Babel preset instead of ignoring them.
   transformIgnorePatterns: [
