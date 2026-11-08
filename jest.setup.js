@@ -38,3 +38,30 @@ jest.mock('@notifee/react-native', () => {
     TriggerType: {TIMESTAMP: 0, INTERVAL: 1},
   };
 });
+
+jest.mock('react-native-background-fetch', () => {
+  const backgroundFetch = {
+    configure: jest.fn(async (_options, onEvent) => {
+      backgroundFetch.onEvent = onEvent;
+      return 0;
+    }),
+    finish: jest.fn(),
+    start: jest.fn(async () => 0),
+    stop: jest.fn(async () => 0),
+    status: jest.fn(async () => 0),
+    onEvent: null,
+  };
+  return {
+    __esModule: true,
+    default: backgroundFetch,
+    ...backgroundFetch,
+    NETWORK_TYPE_NONE: 0,
+    NETWORK_TYPE_ANY: 1,
+    NETWORK_TYPE_UNMETERED: 2,
+    NETWORK_TYPE_NOT_ROAMING: 3,
+    NETWORK_TYPE_CELLULAR: 4,
+    FETCH_RESULT_NEW_DATA: 0,
+    FETCH_RESULT_NO_DATA: 1,
+    FETCH_RESULT_FAILED: 2,
+  };
+});
