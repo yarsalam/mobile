@@ -3,7 +3,11 @@ pluginManagement {
         // Mirror Maven Central and Google Maven to reduce single-provider 5xx/timeout failures.
         maven { url "https://maven.aliyun.com/repository/gradle-plugin" }
         maven { url "https://maven.aliyun.com/repository/google" }
-        maven { url "https://maven.aliyun.com/repository/central" }
+        maven {
+            url "https://maven.aliyun.com/repository/central"
+            // Force POM metadata; Gradle module metadata can redirect the Kotlin compiler JAR to GitHub Releases.
+            metadataSources { mavenPom(); artifact() }
+        }
         google()
         mavenCentral()
         gradlePluginPortal()
