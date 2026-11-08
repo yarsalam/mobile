@@ -52,10 +52,57 @@ jest.mock('@react-native-async-storage/async-storage', () => {
   return {__esModule: true, default: storage, ...storage};
 });
 
-jest.mock('react-native-screens', () =>
-  require('react-native-screens/mock'),
-);
+// Keep the App smoke test focused on the app tree rather than native
+// navigation-stack views that require Android/iOS host components.
+jest.mock('@react-navigation/native-stack', () => {
+  const React = require('react');
+  const {View} = require('react-native');
+  const Navigator = ({children}) => React.createElement(View, null, children);
+  const Screen = () => null;
+  return {
+    createNativeStackNavigator: () => ({Navigator, Screen}),
+  };
+});
 
-jest.mock('react-native-safe-area-context', () =>
-  require('react-native-safe-area-context/jest/mock'),
-);
+jest.mock('react-native-screens', () => {
+  const React = require('react');
+  const {View} = require('react-native');
+  const NativeView = ({children, ...props}) =>
+    React.createElement(View, props, children);
+  return {
+    Screen: NativeView,
+    ScreenContainer: NativeView,
+    ScreenStack: NativeView,
+    ScreenStackHeaderConfig: NativeView,
+    ScreenStackHeaderBackButtonImage: NativeView,
+    ScreenStackHeaderRightView: NativeView,
+    ScreenStackHeaderLeftView: NativeView,
+    ScreenStackHeaderCenterView: NativeView,
+    ScreenStackFooter: NativeView,
+    SearchBar: NativeView,
+    FullWindowOverlay: NativeView,
+    enableScreens: jest.fn(),
+    screensEnabled: jest.fn(() => false),
+    enableFreeze: jest.fn(),
+    freezeEnabled: jest.fn(() => false),
+    useTransitionProgress: jest.fn(() => ({
+      progress: {value: 1},
+      closing: {value: 0},
+      goingForward: {value: 1},
+    })),
+  };
+});
+
+jest.mock('react-native-safe-area-context', () => {
+  const React = require('react');
+  const {View} = require('react-native');
+  return {
+    SafeAreaProvider: ({children}) => React.createElement(View, null, children),
+    SafeAreaView: View,
+    useSafeAreaInsets: () => ({top: 0, right: 0, bottom: 0, left: 0}),
+    initialWindowMetrics: {
+      frame: {x: 0, y: 0, width: 360, height: 640},
+      insets: {top: 0, right: 0, bottom: 0, left: 0},
+    },
+  };
+});
