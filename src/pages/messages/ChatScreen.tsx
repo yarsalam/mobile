@@ -141,7 +141,7 @@ const ChatScreen = ({route}) => {
 
       if (editingMessageId) {
         editMutation.mutate(
-          {messageId: editingMessageId, content: text},
+          {messageId: editingMessageId, content: text, acceptModerationWarning},
           {
             onSuccess: () => {
               setEditingMessageId(null);
