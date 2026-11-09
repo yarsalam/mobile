@@ -17,11 +17,11 @@ export function useMultiStepProfileMutation() {
     onSuccess: async data => {
       if (data.token) {
         await setToken(data.token);
-        await AsyncStorage.multiRemove([
+        await Promise.all([
           'registerStep',
           'multiStepProfile',
           'temp_auth_token',
-        ]);
+        ].map(key => AsyncStorage.removeItem(key)));
       }
       showToast('پروفایل شما با موفقیت ساخته شد', 'success');
       navigation.navigate('UserPanel');
