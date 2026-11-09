@@ -169,7 +169,7 @@ const EditImg = () => {
       img => `${API_BASE_URL}${img.url}` === pendingMainUrl.split('?')[0],
     );
     if (isFromGallery) {
-      const clean = pendingMainUrl.replace(BASE_URL, '').split('?')[0];
+      const clean = pendingMainUrl.replace(API_BASE_URL, '').split('?')[0];
       setMainImage.mutate(clean);
     }
     setConfirmMainVisible(false);
