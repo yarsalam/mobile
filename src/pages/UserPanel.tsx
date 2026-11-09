@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React from 'react';
 import {FlatList} from 'react-native'; // ← ScrollView را حذف کن
 import MainLayout from '../theme/MainLayout';
 import SectionTitle from '../components/SectionTitle';
