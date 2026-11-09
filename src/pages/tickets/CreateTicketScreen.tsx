@@ -16,7 +16,6 @@ import FormCard from '../../components/FormCard';
 import FormInput from '../../components/FormInput';
 import CustomButton from '../../components/CustomButtonProps';
 import ToastHandler from '../../components/ToastHandler';
-import {useTheme} from '../../context/MainContext';
 import {useCreateTicket} from '../../api/mutations/tickets/useCreateTicket';
 import {
   createTicketSchema,
@@ -35,8 +34,7 @@ const CATEGORIES = [
 type Nav = NativeStackNavigationProp<RootStackParamList, 'CreateTicket'>;
 
 const CreateTicketScreen = () => {
-  const {theme} = useTheme();
-  const styles = getStyles(theme);
+  const styles = getStyles();
   const navigation = useNavigation<Nav>();
   const {mutate, isPending} = useCreateTicket();
 
@@ -121,7 +119,7 @@ const CreateTicketScreen = () => {
   );
 };
 
-const getStyles = (theme: any) =>
+const getStyles = () =>
   StyleSheet.create({
     scroll: {
       paddingHorizontal: 16,
