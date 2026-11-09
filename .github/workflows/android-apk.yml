@@ -197,6 +197,9 @@ jobs:
         run: npm run lint
         continue-on-error: true
 
+      - name: Type-check the React Native application (blocking)
+        run: npx tsc --noEmit
+
       - name: Run wallet checkout Jest tests (blocking)
         run: npm test -- --runInBand src/api/mutations/payment/useBuyWithWallet.test.ts src/api/queries/aiAssistant.test.ts src/lib/moderationDecision.test.ts src/api/queries/messages.test.ts
 
