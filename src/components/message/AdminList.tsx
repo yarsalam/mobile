@@ -10,7 +10,7 @@ const FAKE_ADMIN = [
     lastMessageDate: '۱۴۰۲/۱۲/۱۰',
     snippet: 'خوش آمدید',
     unreadCount: 2,
-    type: 'admin',
+    type: 'admin' as const,
   },
 ];
 
