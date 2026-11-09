@@ -1,3 +1,4 @@
+/* global jest */
 jest.mock('react-native-device-info', () => ({
   __esModule: true,
   default: {
