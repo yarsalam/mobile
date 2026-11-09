@@ -2,7 +2,7 @@ name: Android test APK
 
 on:
   push:
-    branches: [main]
+    branches: [main, fix/mobile-wallet-checkout-idempotency-2026-11-08]
     paths:
       - ".github/workflows/android-apk.yml"
       - ".github/workflows/android-signed-release.yml"
@@ -14,6 +14,7 @@ on:
       - "jest.setup.js"
       - "__tests__/**"
       - "app.json"
+      - "types/**"
   pull_request:
     branches: [main]
     paths:
@@ -27,6 +28,7 @@ on:
       - "jest.setup.js"
       - "__tests__/**"
       - "app.json"
+      - "types/**"
   workflow_dispatch:
     inputs:
       api_base_url:
