@@ -5,7 +5,7 @@ const FAKE_ADMIN = [
   {
     userId: 999,
     name: 'پشتیبانی یارسلام',
-    avatarUrl: null,
+    avatarUrl: undefined,
     lastMessageTime: '۱۰:۳۰',
     lastMessageDate: '۱۴۰۲/۱۲/۱۰',
     snippet: 'خوش آمدید',
