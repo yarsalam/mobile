@@ -38,8 +38,9 @@ export type RootStackParamList = {
   Notifications: undefined;
   PaymentMethod: undefined;
   Deposit: {
-    bundleCode: string;
-    requiredCents: number;
+    /** Integer Iranian rials, matching ProductBundle.price in the API. */
+    amountRials: number;
     productLabel: string;
+    bundleCode?: string;
   };
 };
