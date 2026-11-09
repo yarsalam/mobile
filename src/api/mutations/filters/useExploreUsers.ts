@@ -2,7 +2,7 @@ import { useInfiniteQuery } from '@tanstack/react-query';
 import { fetchExploreUsers } from '../../queries/fetchFilteredUsers';
 
 
-export const useExploreUsers = (userId: number, options?: any) =>
+export const useExploreUsers = (userId: number | undefined, options?: any) =>
   useInfiniteQuery({
     queryKey: ['exploreUsers', userId],
     queryFn: ({ pageParam = 0 }) => fetchExploreUsers(pageParam, 10),
