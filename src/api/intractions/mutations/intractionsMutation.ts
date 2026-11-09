@@ -29,9 +29,7 @@ export const useFeed = (limit: number = 20) => {
 
   const likeMutation = useLikeMutation();
   const superLikeMutation = useSuperLikeMutation();
-  const passMutation = usePassMutation(() =>
-    removeFromFeed(passMutation.variables),
-  );
+  const passMutation = usePassMutation(userId => removeFromFeed(userId));
 
   const dismissMutation = useMutation({
     mutationFn: dismissPromotion,
