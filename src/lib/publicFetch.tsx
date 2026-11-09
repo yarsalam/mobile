@@ -2,7 +2,6 @@ export async function publicFetch(url: string, options: any = {}) {
   const res = await fetch(url, {
     headers: {
       'Content-Type': 'application/json',
-      ...cleanHeaders,
       ...(options.headers || {}),
     },
     ...options,
