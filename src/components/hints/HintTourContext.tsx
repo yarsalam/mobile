@@ -56,7 +56,7 @@ export const HintTourProvider = ({children}: {children: React.ReactNode}) => {
     if (currentIndex >= 0 && currentIndex < steps.length) {
       const step = steps[currentIndex];
       if (step.targetRef.current) {
-        step.targetRef.current.measure((x, y, w, h, pageX, pageY) => {
+        step.targetRef.current.measure((x: number, y: number, w: number, h: number, pageX: number, pageY: number) => {
           setTargetPosition({x: pageX, y: pageY, width: w, height: h});
         });
       }
