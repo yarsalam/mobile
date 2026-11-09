@@ -9,9 +9,8 @@ import {useTheme} from '../../context/MainContext';
 
 const Basket: React.FC = () => {
   const route = useRoute();
-  const {isDarkMode} = useTheme();
-  
-  const color = isDarkMode ? '#fff' : 'black';
+  const {theme} = useTheme();
+  const color = theme.colors.text;
   const {id, title, price} = route.params as {
     id: string | number;
     title: string;
