@@ -7,11 +7,13 @@ import { useFilterUsers } from '../../api/mutations/filters/useFilterUsers';
 import { useExploreUsers } from '../../api/mutations/filters/useExploreUsers';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigation } from '@react-navigation/native';
+import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
+import type {RootStackParamList} from '../../../types/rootStackParamList';
 
 const UserSearchList = () => {
   const { filters } = useFilter();
   const { user: authUser } = useAuth();
-  const navigation = useNavigation();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   const hasActiveFilters = Object.keys(filters).length > 0;
 
@@ -29,7 +31,7 @@ const UserSearchList = () => {
     hasNextPage: hasNextExplore,
     isFetchingNextPage: fetchingExplore,
     isLoading: loadingExplore,
-  } = useExploreUsers(authUser?.id, { enabled: !hasActiveFilters });
+  } = useExploreUsers(typeof authUser?.id === 'number' ? authUser.id : 0, { enabled: !hasActiveFilters });
 
   // Flat کردن صفحات و **فیلتر کردن آیتم‌های بدون id**
   const users = useMemo(() => {
@@ -52,7 +54,7 @@ const UserSearchList = () => {
     return (
       <HorizontalUserCard
         user={item}
-        onPress={() => navigation.navigate('UserProfile', { user: item.id })}
+        onPress={() => navigation.navigate('UserProfile', { user: item })}
       />
     );
   };
@@ -70,14 +72,14 @@ const UserSearchList = () => {
       ListFooterComponent={
         (hasActiveFilters ? fetchingFiltered : fetchingExplore) ? (
           <ActivityIndicator size="small" style={{ marginVertical: 10 }} />
-        ) : null
+        ) : undefined
       }
       ListEmptyComponent={
         !isLoading ? (
           <View style={styles.empty}>
             <GlobalText>کاربری یافت نشد</GlobalText>
           </View>
-        ) : null
+        ) : undefined
       }
     />
   );
