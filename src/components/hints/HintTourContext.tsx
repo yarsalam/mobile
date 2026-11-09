@@ -4,13 +4,10 @@ import {
   Modal,
   TouchableOpacity,
   StyleSheet,
-  Dimensions,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import GlobalText from '../GlobalText';
 import {useTheme} from '../../context/MainContext';
-
-const {width, height} = Dimensions.get('window');
 
 type HintStep = {
   id: string;
