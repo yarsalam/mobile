@@ -1,17 +1,20 @@
-import { startPayment } from "../../lib/payment";
-import CustomButton from "../CustomButtonProps";
+import {startPayment} from '../../lib/payment';
+import type {PaywallAction} from '../../types/paywall';
+import CustomButton from '../CustomButtonProps';
 
-export const PaywallActionButton = ({ action, primary }) => {
-  const onPress = () => {
-    startPayment(action.product, action.productId);
-    track('paywall_click', action);
-  };
+interface Props {
+  action: PaywallAction;
+  primary?: boolean;
+}
+
+export const PaywallActionButton = ({action, primary = false}: Props) => {
+  const onPress = () => startPayment(action.product, action.productId);
 
   return (
     <CustomButton
       label={action.label}
       onPress={onPress}
-      gradient={primary || action.highlight}
+      gradient={primary || Boolean(action.highlight)}
     />
   );
 };
