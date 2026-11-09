@@ -20,7 +20,7 @@ export const NotificationSocketProvider = ({
   const queryClient = useQueryClient();
   const {showToast} = useToast();
   const [socket, setSocket] = useState<Socket | null>(null);
-  const appStateRef = useRef<AppStateStatus>(AppState.currentState);
+  const appStateRef = useRef<AppStateStatus | null>(AppState.currentState);
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', nextState => {
@@ -57,8 +57,11 @@ export const NotificationSocketProvider = ({
       ]);
 
       const message = notif?.message || 'اعلان جدید دریافت شد';
+      const notificationType = notif?.type === 'message' || notif?.type === 'visitor'
+        ? notif.type
+        : undefined;
       if (appStateRef.current === 'active') {
-        showToast(message, 'info', undefined, notif?.type);
+        showToast(message, 'info', undefined, notificationType);
       } else {
         await notifee.displayNotification({
           title: 'یارسلام',
