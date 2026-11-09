@@ -34,11 +34,20 @@ export async function getAcquisitionData() {
     };
   }
 
-  // اینجا یه } کم بود
-  const urlParams = new URLSearchParams(window.location.search);
+  // This module is bundled for React Native. Access optional web globals
+  // through a typed runtime shape so native TypeScript builds don't require DOM.
+  const runtime = globalThis as unknown as {
+    location?: {search?: string; pathname?: string};
+    localStorage?: {getItem: (key: string) => string | null};
+    document?: {referrer?: string};
+  };
+  const urlParams = new URLSearchParams(runtime.location?.search ?? '');
+  const storedSource = runtime.localStorage?.getItem('acq_source');
+  const storedReferral = runtime.localStorage?.getItem('referral_code');
+
   return {
     acquisitionSource:
-      localStorage.getItem('acq_source') ||
+      storedSource ||
       urlParams.get('utm_source') ||
       urlParams.get('source') ||
       'direct',
@@ -46,13 +55,13 @@ export async function getAcquisitionData() {
     referralCode:
       urlParams.get('ref') ||
       urlParams.get('invite') ||
-      localStorage.getItem('referral_code') ||
+      storedReferral ||
       null,
     acquisitionMeta: {
       campaign: urlParams.get('utm_campaign') || null,
       medium: urlParams.get('utm_medium') || null,
-      landingPage: window.location.pathname,
-      referrer: document.referrer || 'direct',
+      landingPage: runtime.location?.pathname || 'app',
+      referrer: runtime.document?.referrer || 'direct',
     },
   };
 }
