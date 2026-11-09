@@ -164,7 +164,7 @@ export const ChangeMobile = () => {
             <FormInput
               type="radiobutton"
               value={channel}
-              onChange={(val: Channel) => setChannel(val)}
+              onChange={(val: string) => setChannel(val === 'whatsapp' ? 'whatsapp' : 'telegram')}
               radioItems={[
                 {label: 'واتساپ', value: 'whatsapp'},
                 {label: 'تلگرام', value: 'telegram'},
