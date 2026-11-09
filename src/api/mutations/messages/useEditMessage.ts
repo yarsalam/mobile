@@ -5,7 +5,7 @@ export const useEditMessage = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: editMessage,
-    onSuccess: (data: any, variables) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['chat'] });
       queryClient.invalidateQueries({ queryKey: ['inboxGrouped'] });
       queryClient.invalidateQueries({ queryKey: ['sentGrouped'] });
