@@ -10,7 +10,6 @@ import {
 } from 'react-native';
 import MainLayout from '../../theme/MainLayout';
 import GlobalText from '../../components/GlobalText';
-import {useTheme} from '../../context/MainContext';
 import {
   useConversation,
   useSendMessage,
@@ -18,7 +17,6 @@ import {
 
 const AiChat = ({route}) => {
   const {convId} = route.params;
-  const {theme} = useTheme();
   const [inputText, setInputText] = useState('');
   const flatListRef = useRef(null);
 
@@ -33,7 +31,7 @@ const AiChat = ({route}) => {
       {convId, message: inputText},
       {onSuccess: () => setInputText('')},
     );
-  }, [inputText, convId]);
+  }, [inputText, convId, sendMutation]);
 
   const renderMessage = ({item}: any) => {
     const isUser = item.sender === 'user';
