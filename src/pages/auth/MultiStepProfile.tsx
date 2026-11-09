@@ -35,6 +35,7 @@ import {
   MultiStepProfileForm,
   MultiStepProfilePayload,
   multiStepProfileSchema,
+  multiStepProfilePayloadSchema,
 } from '../../schemas/authSchemas';
 import {MultiStepProfileDefaultValues} from '../../utils/MultiStepProfileDefaultValues';
 import {useMultiStepProfileMutation} from '../../api/auth/mutations/useMultiStepProfileMutation';
@@ -152,10 +153,8 @@ const MultiStepProfile: React.FC = () => {
   };
 
   const onSubmit = async (data: MultiStepProfileForm) => {
-    const payload = {...data};
-    delete payload.confirmPassword;
-    delete payload.phone;
-    const sendData: MultiStepProfilePayload = {...payload};
+    const sendData: MultiStepProfilePayload =
+      multiStepProfilePayloadSchema.parse(data);
     endStepProfile.mutateAsync(sendData);
     form.stopPersisting();
     reset(MultiStepProfileDefaultValues);
