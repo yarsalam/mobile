@@ -26,12 +26,12 @@ const Interactions = () => {
   const navigation = useNavigation();
   const {data: interactions = [], isLoading, refetch} = useInteractions();
   const markAsRead = useMarkAsRead();
-  const markAllRead = useMarkInteractionsRead();
+  const {mutate: markAllRead} = useMarkInteractionsRead();
 
   // وقتی صفحه focus میشه badge رو reset کن
   useFocusEffect(
     useCallback(() => {
-      markAllRead.mutate();
+      markAllRead();
     }, [markAllRead]),
   );
 
