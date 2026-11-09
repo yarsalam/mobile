@@ -1,7 +1,7 @@
 import React, {useCallback} from 'react';
 import {
   FlatList, TouchableOpacity, StyleSheet,
-  ActivityIndicator, View, Image,
+  ActivityIndicator, View,
 } from 'react-native';
 import {useFocusEffect} from '@react-navigation/native';
 import MainLayout from '../theme/MainLayout';
@@ -32,7 +32,7 @@ const Interactions = () => {
   useFocusEffect(
     useCallback(() => {
       markAllRead.mutate();
-    }, []),
+    }, [markAllRead]),
   );
 
   const handlePress = (item: any) => {
