@@ -5,6 +5,7 @@ import {
   countUnread,
   fetchInteractions,
   fetchNotifications,
+  countUnread,
   fetchSystemNotifications,
   markAsRead,
 } from '../../queries/notifications';
