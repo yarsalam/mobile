@@ -1,10 +1,8 @@
 import React from 'react';
-import {TouchableOpacity, StyleSheet, Dimensions} from 'react-native';
+import {TouchableOpacity, StyleSheet} from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import GlobalText from './GlobalText';
 import {CARD_HEIGHT, CARD_WIDTH} from './user/UserCard';
-
-const {width} = Dimensions.get('window');
 
 const PromotionCard = ({data, onPress}) => {
   const {variant, title, subtitle, ctaText, ctaColor, gradientColors} = data;
