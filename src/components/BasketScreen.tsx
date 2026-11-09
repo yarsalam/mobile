@@ -25,8 +25,6 @@ export default function BasketScreen({basketItems}: Props) {
   const {theme} = useTheme();
   const navigation = useNavigation<Navigation>();
 
-  const navigation = useNavigation<Navigation>();
-
   const handleContinueToProducts = () => {
     // The old Basket route has no confirmed live direct-payment contract and
     // no in-repository caller. Do not reinterpret its legacy price as a wallet
