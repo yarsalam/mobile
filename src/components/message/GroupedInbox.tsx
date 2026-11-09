@@ -1,7 +1,6 @@
 import React from 'react';
 import {View, ScrollView, StyleSheet} from 'react-native';
 import { GroupedMessageDto } from '../../../types/messageType';
-import { useInboxGrouped } from '../../api/mutations/messages/useInboxGrouped';
 import MessageItem from '../MessageItem';
 
 
@@ -16,10 +15,6 @@ const GroupedInbox: React.FC<Props> = ({inboxData}) => {
     acc[msg.userId].push(msg);
     return acc;
   }, {} as Record<number, GroupedMessageDto[]>);
-  const {data, isLoading} = useInboxGrouped(user.id);
-  {
-    !isLoading && data && <GroupedInbox inboxData={data} />;
-  }
   return (
     <ScrollView contentContainerStyle={{padding: 12}}>
       {Object.values(groupedByUser).map((messages, index) => (
