@@ -1,5 +1,5 @@
 import {useState} from 'react';
-import type {PaywallResponse} from '../../types/paywall';
+import type {PaywallResponse} from '../../../types/paywall';
 
 export function usePaywall() {
   const [paywall, setPaywall] = useState<PaywallResponse | null>(null);
