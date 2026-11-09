@@ -38,7 +38,7 @@ const DynamicSkeleton: React.FC<DynamicSkeletonProps> = ({type, count = 1}) => {
     );
     animation.start();
     return () => animation.stop();
-  }, []);
+  }, [shimmerAnim]);
 
   const shimmerTranslateX = shimmerAnim.interpolate({
     inputRange: [0, 1],
