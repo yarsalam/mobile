@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useAuth } from '../context/AuthContext';
 import notifee, { AndroidImportance, EventType } from '@notifee/react-native';
@@ -13,6 +13,15 @@ export const useNotificationSocket = () => {
   const socketRef = useRef<Socket | null>(null);
   const navigation = useNavigation<any>();
   const queryClient = useQueryClient();
+  const handleNotificationPress = useCallback((data: any) => {
+    if (!data) return;
+    if (data.screen === 'Chat') {
+      navigation.navigate('Chat', { userId: data.related_id, nickname: data.message });
+    } else if (data.screen === 'UserProfile') {
+      navigation.navigate('UserProfile', { user: data.related_id });
+    }
+  }, [navigation]);
+
 
   useEffect(() => {
     if (!token || !user) return;
@@ -63,16 +72,7 @@ export const useNotificationSocket = () => {
       unsubscribeForegroundEvent();
       // background event نیازی به پاک‌سازی ندارد
     };
-  }, [token, user]);
-
-  const handleNotificationPress = (data: any) => {
-    if (!data) return;
-    if (data.screen === 'Chat') {
-      navigation.navigate('Chat', { userId: data.related_id, nickname: data.message });
-    } else if (data.screen === 'UserProfile') {
-      navigation.navigate('UserProfile', { user: data.related_id });
-    }
-  };
+  }, [token, user, queryClient, handleNotificationPress]);
 
   return null;
 };
