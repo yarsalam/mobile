@@ -9,16 +9,20 @@ import {
   StyleSheet,
 } from 'react-native';
 import MainLayout from '../../theme/MainLayout';
+import type {NativeStackScreenProps} from '@react-navigation/native-stack';
+import type {RootStackParamList} from '../../../types/rootStackParamList';
 import GlobalText from '../../components/GlobalText';
 import {
   useConversation,
   useSendMessage,
 } from '../../api/mutations/assistant/aiAssistantHooks';
 
-const AiChat = ({route}) => {
+type Props = NativeStackScreenProps<RootStackParamList, 'AiChat'>;
+
+const AiChat = ({route}: Props) => {
   const {convId} = route.params;
   const [inputText, setInputText] = useState('');
-  const flatListRef = useRef(null);
+  const flatListRef = useRef<FlatList<any>>(null);
 
   const {data: conversation, isLoading} = useConversation(convId);
   const {mutate: sendMessage} = useSendMessage();
