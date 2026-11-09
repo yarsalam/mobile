@@ -3,7 +3,6 @@ import {View, ScrollView, StyleSheet} from 'react-native';
 import MainLayout from '../theme/MainLayout';
 import SortSelector from '../components/SortSelector';
 import {useTheme} from '../context/MainContext';
-import {useAuth} from '../context/AuthContext';
 import {useVisitors} from '../api/mutations/visitors/visitorsList';
 import {useVisitedUsers} from '../api/mutations/visitors/useVisitedUsers';
 import VisitorsList from '../components/user/VisitorsList';
@@ -12,7 +11,6 @@ import SectionWithLine from '../components/SectionWithLine';
 const Visitors: React.FC = () => {
   const {isDarkMode} = useTheme();
   const [currentSort, setCurrentSort] = useState('transacion');
-  const {user} = useAuth();
   const icons = {
     contact: isDarkMode
       ? require('../assets/img/wh_sort.png')
