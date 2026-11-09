@@ -77,7 +77,7 @@ const SuggestionsList: React.FC = () => {
     return (
       <TouchableOpacity
         activeOpacity={0.8}
-        onPress={() => navigation.navigate('UserProfile', {userId: item.id})}
+        onPress={() => navigation.navigate('UserProfile', {user: item})}
         style={styles.card}>
         <Image source={avatarSource} style={styles.avatar} />
         <GlobalText style={styles.name}>
