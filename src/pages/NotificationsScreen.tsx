@@ -1,6 +1,6 @@
 import React, {useCallback} from 'react';
 import {
-  FlatList, TouchableOpacity, StyleSheet,
+  FlatList, StyleSheet,
   ActivityIndicator, View,
 } from 'react-native';
 import {useFocusEffect} from '@react-navigation/native';
@@ -29,7 +29,7 @@ const NotificationsScreen = () => {
   useFocusEffect(
     useCallback(() => {
       markAllRead.mutate();
-    }, []),
+    }, [markAllRead]),
   );
 
   const renderItem = ({item}: any) => {
