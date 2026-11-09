@@ -191,7 +191,7 @@ const MessageList: React.FC<Props> = ({data, isLoading, onRefresh}) => {
               onPress={() => setVisibleCount(prev => prev + ITEMS_PER_PAGE)}>
               <GlobalText>بیشتر...</GlobalText>
             </TouchableOpacity>
-          ) : null
+          ) : undefined
         }
       />
 
