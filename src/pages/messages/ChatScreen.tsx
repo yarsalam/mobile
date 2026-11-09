@@ -26,13 +26,17 @@ import {useModeratedSend} from '../../lib/useModeratedSend';
 import {useQueryClient} from '@tanstack/react-query';
 import {useChatMessages} from '../../api/mutations/messages/useChatMessages';
 import {useSuggestReply} from '../../api/mutations/assistant/aiAssistantHooks';
+import type {NativeStackScreenProps} from '@react-navigation/native-stack';
+import type {RootStackParamList} from '../../../types/rootStackParamList';
 
 // ═══ HELPERS ═══
 const getChatRoom = (a: number, b: number) =>
   `chat_${Math.min(a, b)}_${Math.max(a, b)}`;
 
 // ═══ COMPONENT ═══
-const ChatScreen = ({route}) => {
+type Props = NativeStackScreenProps<RootStackParamList, 'Chat'>;
+
+const ChatScreen = ({route}: Props) => {
   const {userId, nickname} = route.params;
   const {user: authUser} = useAuth();
   const {theme} = useTheme();
@@ -50,7 +54,7 @@ const ChatScreen = ({route}) => {
 
   // ═══ QUERIES & MUTATIONS ═══
   const {data, fetchNextPage, hasNextPage, isLoading} = useChatMessages(
-    authUser?.id,
+    authUser?.id ?? 0,
     userId,
   );
   const sendMutation = useSendMessage();
@@ -371,7 +375,7 @@ const ChatScreen = ({route}) => {
         renderItem={renderItem}
         keyExtractor={(item: any) => (item.id ?? item.tempId)?.toString()}
         inverted
-        onEndReached={hasNextPage ? () => fetchNextPage() : null}
+        onEndReached={hasNextPage ? () => { void fetchNextPage(); } : undefined}
         onEndReachedThreshold={0.5}
         refreshing={isLoading && !messages.length}
         onRefresh={() =>
@@ -380,7 +384,7 @@ const ChatScreen = ({route}) => {
           })
         }
         ListEmptyComponent={
-          isLoading ? null : (
+          isLoading ? <ActivityIndicator size="small" /> : (
             <GlobalText style={styles.empty}>گفتگویی وجود ندارد.</GlobalText>
           )
         }
