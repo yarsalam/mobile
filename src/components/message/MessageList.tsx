@@ -9,7 +9,6 @@ import React, {useState} from 'react';import {
 } from 'react-native';
 import {useNavigation, NavigationProp} from '@react-navigation/native'; // NavigationProp را import کنید
 import {useTheme} from '../../context/MainContext';
-import {useAuth} from '../../context/AuthContext';
 import {useDeleteAllMessages} from '../../api/mutations/messages/useDeleteAllMessages';
 import {useDeleteMessage} from '../../api/mutations/messages/useDeleteMessage';
 import {useMarkAsRead} from '../../api/mutations/messages/useMarkAsRead';
@@ -45,13 +44,11 @@ interface Props {
 
 const ITEMS_PER_PAGE = 7;
 
-const MessageList: React.FC<Props> = ({data, isLoading, onRefresh, title}) => {
-  const [selectAll, setSelectAll] = useState(false);
+const MessageList: React.FC<Props> = ({data, isLoading, onRefresh}) => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
   const {theme} = useTheme();
   const navigation = useNavigation<NavigationProp<any>>(); // تایپ را اصلاح کنید
-  const {user: authUser} = useAuth();
   const deleteAllMutation = useDeleteAllMessages();
   const deleteMutation = useDeleteMessage();
   const markAsReadMutation = useMarkAsRead();
@@ -69,7 +66,6 @@ const MessageList: React.FC<Props> = ({data, isLoading, onRefresh, title}) => {
             deleteAllMutation.mutate(undefined, {
               onSuccess: () => {
                 setShowDeleteModal(false);
-                setSelectAll(false);
                 Alert.alert('موفقیت', 'همه گفتگوها حذف شدند.');
               },
               onError: error => {
