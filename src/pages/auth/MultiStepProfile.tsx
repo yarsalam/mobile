@@ -39,7 +39,6 @@ import {
 import {MultiStepProfileDefaultValues} from '../../utils/MultiStepProfileDefaultValues';
 import {useMultiStepProfileMutation} from '../../api/auth/mutations/useMultiStepProfileMutation';
 import AuthLayout from '../../components/user/AuthLayout';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const MultiStepProfile: React.FC = () => {
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
@@ -153,7 +152,9 @@ const MultiStepProfile: React.FC = () => {
   };
 
   const onSubmit = async (data: MultiStepProfileForm) => {
-    const {confirmPassword,phone, ...payload} = data;
+    const payload = {...data};
+    delete payload.confirmPassword;
+    delete payload.phone;
     const sendData: MultiStepProfilePayload = {...payload};
     endStepProfile.mutateAsync(sendData);
     form.stopPersisting();
