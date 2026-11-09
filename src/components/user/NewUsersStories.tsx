@@ -35,7 +35,7 @@ const NewUsersStories: React.FC<NewUsersStoriesProps> = ({
   const styles = getStyles(theme);
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const scrollRef = useRef<ScrollView>(null);
+  const scrollRef = useRef<React.ElementRef<typeof ScrollView>>(null);
 
   // ← هیچ تایمری نیست، کاربر خودش اسکرول می‌کند
 
