@@ -5,7 +5,6 @@ import {
   Image,
   ScrollView,
   StyleSheet,
-  Text,
 } from 'react-native';
 import {launchImageLibrary} from 'react-native-image-picker';
 import {useAuth} from '../../context/AuthContext';
