@@ -21,17 +21,17 @@ const AiChat = ({route}) => {
   const flatListRef = useRef(null);
 
   const {data: conversation, isLoading} = useConversation(convId);
-  const sendMutation = useSendMessage();
+  const {mutate: sendMessage} = useSendMessage();
 
   const messages = conversation?.messages || [];
 
   const handleSend = useCallback(() => {
     if (!inputText.trim()) return;
-    sendMutation.mutate(
+    sendMessage(
       {convId, message: inputText},
       {onSuccess: () => setInputText('')},
     );
-  }, [inputText, convId, sendMutation]);
+  }, [inputText, convId, sendMessage]);
 
   const renderMessage = ({item}: any) => {
     const isUser = item.sender === 'user';
