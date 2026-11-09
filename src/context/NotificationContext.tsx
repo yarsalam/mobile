@@ -20,7 +20,7 @@ export const NotificationSocketProvider = ({
   const queryClient = useQueryClient();
   const {showToast} = useToast();
   const [socket, setSocket] = useState<Socket | null>(null);
-  const appStateRef = useRef<AppStateStatus>(AppState.currentState ?? 'active');
+  const appStateRef = useRef<AppStateStatus>(AppState.currentState as AppStateStatus);
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', nextState => {
