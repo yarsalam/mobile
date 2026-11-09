@@ -87,7 +87,7 @@ const FeedSlider = () => {
       text: 'از این دکمه برای رد کردن کاربر استفاده کنید',
     });
     startTour();
-  }, []);
+  }, [registerStep, startTour]);
 
   return (
     <View style={styles.container}>
