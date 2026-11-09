@@ -77,7 +77,7 @@ export const EditProfile = () => {
     if (user?.city && selectedProvince && user.province === selectedProvince) {
       setValue('city', user.city);
     }
-  }, [selectedProvince, user]);
+  }, [selectedProvince, user, setValue]);
 
   const onSubmit = (data: EditProfileData) => {
     mutate(data);
