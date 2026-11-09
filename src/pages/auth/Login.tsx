@@ -19,7 +19,6 @@ import {zodResolver} from '@hookform/resolvers/zod';
 import {z} from 'zod';
 import ToastHandler from '../../components/ToastHandler';
 import {KeyboardAvoidingView, ScrollView, Platform} from 'react-native';
-import {useTheme} from '../../context/MainContext';
 import FormInput from '../../components/FormInput';
 import {convertPersianNumbersToEnglish} from '../../utils/convertNumToEn';
 import {useLoginMutation} from '../../api/auth/mutations/useLoginutation';
@@ -88,8 +87,7 @@ const Login: React.FC<LoginProps> = ({navigation}) => {
   } = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
   });
-  const {theme} = useTheme();
-  const styles = getStyles(theme);
+  const styles = getStyles();
 
   const onSubmit = async (data: z.infer<typeof loginSchema>) => {
     const sanitizedData = {
@@ -214,7 +212,7 @@ const Login: React.FC<LoginProps> = ({navigation}) => {
 };
 export default Login;
 
-const getStyles = (theme: any) =>
+const getStyles = () =>
   StyleSheet.create({
     container: {
       flex: 1,
