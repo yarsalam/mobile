@@ -15,7 +15,7 @@ const SNAP = CARD_WIDTH + CARD_MARGIN * 2;
 const AUTO_SLIDE_INTERVAL = 6500;
 
 const FeedSlider = () => {
-  const scrollRef = useRef<ScrollView>(null);
+  const scrollRef = useRef<React.ElementRef<typeof ScrollView>>(null);
   const {feed, isLoading, handleLike, handleSuperLike, handlePass} =
     useFeed(30);
   const navigation =
