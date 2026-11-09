@@ -203,7 +203,10 @@ const UserProfileMobile = ({user: passedUser}: {user?: any}) => {
   }, [isOnline, pulseAnim]);
 
   // ─── تصاویر ───────────────────────────────────────────────────────────────
-  const rawImages = passedUser ? passedUser.userImages || [] : images;
+  const rawImages = useMemo(
+    () => passedUser ? passedUser.userImages || [] : images,
+    [passedUser, images],
+  );
   const fullImages = useMemo(
     () =>
       rawImages.map((img: any) => ({
