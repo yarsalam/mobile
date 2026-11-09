@@ -1,5 +1,5 @@
 import {startPayment} from '../../lib/payment';
-import type {PaywallAction} from '../../types/paywall';
+import type {PaywallAction} from '../../../types/paywall';
 import CustomButton from '../CustomButtonProps';
 
 interface Props {
