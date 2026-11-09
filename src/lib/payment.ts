@@ -1,18 +1,14 @@
-// import {navigate} from '../navigation/rootNavigation';
+import {navigationRef} from './navigationRef';
 
-// export type PaymentProduct = 'boost' | 'credits' | 'vip' | 'bundle';
+export type PaymentProduct = 'boost' | 'credits' | 'vip' | 'bundle' | string;
 
-// export interface ProductPricing {
-//   productId: string;
-//   productCode: string;
-//   amountRials: number; // برای card_to_card
-//   amountCents: number; // برای crypto (500 = 5 USDT)
-// }
-
-// /**
-//  * نقطه مرکزی شروع پرداخت.
-//  * به جای redirect مستقیم به درگاه، به صفحه انتخاب روش می‌رود.
-//  */
-// export function startPayment(product: PaymentProduct, productId: string) {
-//   navigate('PaymentMethod', {product, productId});
-// }
+/** Route a paywall action to the existing server-priced deposit flow. */
+export function startPayment(_product: PaymentProduct, productId: string) {
+  if (!productId?.trim()) {
+    throw new Error('شناسه محصول برای شروع پرداخت معتبر نیست.');
+  }
+  if (!navigationRef.isReady()) {
+    throw new Error('ناوبری برنامه هنوز آماده نیست. دوباره تلاش کنید.');
+  }
+  navigationRef.navigate('PaymentMethod', {productId: String(productId)});
+}
