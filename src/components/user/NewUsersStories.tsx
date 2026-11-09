@@ -5,7 +5,6 @@ import {
   TouchableOpacity,
   Image,
   StyleSheet,
-  Dimensions,
 } from 'react-native';
 import GlobalText from '../GlobalText';
 import LinearGradient from 'react-native-linear-gradient';
