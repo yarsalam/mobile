@@ -8,6 +8,8 @@ import MainLayout from '../theme/MainLayout';
 import GlobalText from '../components/GlobalText';
 import {useTheme} from '../context/MainContext';
 import {useNavigation} from '@react-navigation/native';
+import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
+import type {RootStackParamList} from '../../types/rootStackParamList';
 import {
   useInteractions,
   useMarkAsRead,
@@ -23,7 +25,7 @@ const TYPE_CONFIG: Record<string, {icon: string; color: string; label: string}> 
 
 const Interactions = () => {
   const {theme} = useTheme();
-  const navigation = useNavigation();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const {data: interactions = [], isLoading, refetch} = useInteractions();
   const markAsRead = useMarkAsRead();
   const {mutate: markAllRead} = useMarkInteractionsRead();
@@ -38,7 +40,7 @@ const Interactions = () => {
   const handlePress = (item: any) => {
     markAsRead.mutate(item.id);
     if (item.related_id) {
-      navigation.navigate('UserProfile' as never, {user: item.related_id} as never);
+      navigation.navigate('UserProfile', {user: item.related_id});
     }
   };
 
