@@ -4,7 +4,21 @@ import LinearGradient from 'react-native-linear-gradient';
 import GlobalText from './GlobalText';
 import {CARD_HEIGHT, CARD_WIDTH} from './user/UserCard';
 
-const PromotionCard = ({data, onPress}) => {
+interface PromotionData {
+  variant: 'boost' | 'vip' | 'credit' | string;
+  title: string;
+  subtitle: string;
+  ctaText: string;
+  ctaColor: string;
+  gradientColors: string[];
+}
+
+interface PromotionCardProps {
+  data: PromotionData;
+  onPress: () => void;
+}
+
+const PromotionCard: React.FC<PromotionCardProps> = ({data, onPress}) => {
   const {variant, title, subtitle, ctaText, ctaColor, gradientColors} = data;
 
   const getIcon = () => {
