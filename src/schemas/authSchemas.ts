@@ -21,8 +21,7 @@ export const sendOtpWithChannelSchema = z.object({
 
 export const selectChannelSchema = z.object({
   channel: z.enum(['whatsapp', 'telegram'], {
-    required_error: 'انتخاب روش دریافت کد اجباری است',
-    invalid_type_error: 'یکی از گزینه‌ها را انتخاب کنید',
+    message: 'یکی از روش‌های دریافت کد را انتخاب کنید',
   }),
 });
 
@@ -45,7 +44,7 @@ export const telegramOtpFormSchema = z.object({
 
 export const loginSchema = z.object({
   phone: z
-    .string({required_error: 'شماره موبایل را وارد کنید'})
+    .string({message: 'شماره موبایل را وارد کنید'})
     .nonempty('شماره موبایل نمیتواند خالی باشد')
     .min(11, 'شماره موبایل باید ۱۱ رقم باشد')
     .max(11, 'شماره موبایل باید ۱۱ رقم باشد')
@@ -54,14 +53,14 @@ export const loginSchema = z.object({
       'شماره موبایل باید با 09 یا ۰۹ شروع شود',
     ),
   password: z
-    .string({required_error: 'رمز عبور را وارد کنید'})
+    .string({message: 'رمز عبور را وارد کنید'})
     .nonempty('رمز عبور نمیتوانپ خالی باشد کنید'),
 });
 
 const baseMultiStepProfileSchema = z.object({
   phone: z.string(),
   nickname: z
-    .string({required_error: 'نام کاربری الزامی است'})
+    .string({message: 'نام کاربری الزامی است'})
     .min(2, 'نام کاربری حداقل 3 حرفی باشد')
     .max(7, 'نام کاربری حداکثر 7 حرفی باشد')
     .regex(/^[\u0600-\u06FF\s]+$/, 'نام کاربری باید فارسی باشد'),
@@ -85,7 +84,7 @@ const baseMultiStepProfileSchema = z.object({
     .max(3, 'حداکثر ۳ اولویت شخصیتی را می‌توانید انتخاب کنید')
     .min(1, 'اولویت شخصیتی نمیتواند خالی باشد'),
   partner_about: z
-    .string({required_error: 'درباره همراه من الزامی است'})
+    .string({message: 'درباره همراه من الزامی است'})
     .min(10, 'حداقل ۱۰ کاراکتر درباره همسر ایده آلتان بنویسید')
     .max(500, 'درباره همسرم نباید بیشتر از 500 کاراکتر باشد')
     .regex(
@@ -93,11 +92,11 @@ const baseMultiStepProfileSchema = z.object({
       'فقط فارسی مجاز است',
     ),
   hobbies_partner: z
-    .array(z.string({required_error: 'سبک زندگی الزامی است'}))
+    .array(z.string({message: 'سبک زندگی الزامی است'}))
     .max(5, 'حداکثر ۵ سبک زندگی را می‌توانید انتخاب کنید')
     .min(1, 'سبک زندگی نمیتواند خالی باشد'),
   aboutme: z
-    .string({required_error: 'درباره من الزامی است'})
+    .string({message: 'درباره من الزامی است'})
     .min(10, 'حداقل ۱۰ کاراکتر درباره خودتان بنویسید')
     .max(500, 'درباره خودم نباید بیشتر از 500 کاراکتر باشد')
     .regex(/^[\u0600-\u06FF\s]+$/, 'درباره خودم را باید به فارسی باشد'),
@@ -106,15 +105,15 @@ const baseMultiStepProfileSchema = z.object({
     .max(3, 'حداکثر ۳ اولویت شخصیتی را می‌توانید انتخاب کنید')
     .min(1, 'اولویت شخصیتی نمیتواند خالی باشد'),
   hobbies_self: z
-    .array(z.string({required_error: 'سبک زندگی الزامی است'}))
+    .array(z.string({message: 'سبک زندگی الزامی است'}))
     .max(5, 'حداکثر ۵ سبک زندگی را می‌توانید انتخاب کنید')
     .min(1, 'سبک زندگی نمیتواند خالی باشد'),
   password: z
-    .string({required_error: 'رمز ورود الزامی است'})
+    .string({message: 'رمز ورود الزامی است'})
     .min(3, 'رمز ورود حداقل باید ۳ کاراکتر داشته باشد')
     .max(12, 'حداکثر ۱۲ کاراکتر برای رمز ورود مجاز است'),
   confirmPassword: z.string({
-    required_error: 'تکرار رمز ورود الزامی است',
+    message: 'تکرار رمز ورود الزامی است',
   }),
 });
 
