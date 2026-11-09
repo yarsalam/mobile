@@ -2,7 +2,6 @@ import React, {useState} from 'react';
 import {View, StyleSheet} from 'react-native';
 import MainLayout from '../../theme/MainLayout';
 import SectionWithLine from '../../components/SectionWithLine';
-import {useTheme} from '../../context/MainContext';
 import InboxList from '../../components/message/InboxList';
 import SentList from '../../components/message/SentList';
 import AdminList from '../../components/message/AdminList';
@@ -15,9 +14,8 @@ const SORT_OPTIONS = [
 ];
 
 const Messages = () => {
-  const {theme} = useTheme();
   const [tab, setTab] = useState<'inbox' | 'sent' | 'admin'>('inbox');
-  const styles = getStyles(theme);
+  const styles = getStyles();
 
   const icons = {
     sort: require('../../assets/img/sort.png'),
@@ -45,7 +43,7 @@ const Messages = () => {
   );
 };
 
-const getStyles = (theme: any) =>
+const getStyles = () =>
   StyleSheet.create({
     sortWrapper: {
       paddingHorizontal: 16,
