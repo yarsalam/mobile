@@ -1,7 +1,7 @@
 import {Modal, StyleSheet, TouchableOpacity, View} from 'react-native';
 import GlobalText from '../GlobalText';
 import {PaywallActionButton} from './PaywallActionButton';
-import type {PaywallResponse} from '../../types/paywall';
+import type {PaywallResponse} from '../../../types/paywall';
 
 interface Props {
   data: PaywallResponse | null;
