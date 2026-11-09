@@ -1,5 +1,5 @@
 import React from 'react';
-import {View, FlatList, StyleSheet, Alert} from 'react-native';
+import {View, FlatList, StyleSheet} from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import GlobalText from './GlobalText';
@@ -25,39 +25,20 @@ export default function BasketScreen({basketItems}: Props) {
   const {theme} = useTheme();
   const navigation = useNavigation<Navigation>();
 
-  const totalRials = basketItems.reduce(
-    (total, item) => total + (Number.isSafeInteger(item.price) ? item.price : 0),
-    0,
-  );
-  const productLabel = basketItems.map(item => item.title).filter(Boolean).join('، ');
-  const bundleCode = basketItems.length === 1 ? String(basketItems[0].id) : '';
+  const navigation = useNavigation<Navigation>();
 
-  const handleWalletDeposit = () => {
-    if (
-      basketItems.length !== 1 ||
-      !bundleCode ||
-      !Number.isSafeInteger(totalRials) ||
-      totalRials <= 0
-    ) {
-      Alert.alert(
-        'سبد خرید قابل پرداخت نیست',
-        'برای خرید، لطفاً محصول را از فروشگاه انتخاب کنید تا کد بسته و مبلغ معتبر از سرور دریافت شود.',
-      );
-      return;
-    }
-
-    navigation.navigate('Deposit', {
-      amountRials: totalRials,
-      productLabel,
-      bundleCode,
-    });
+  const handleContinueToProducts = () => {
+    // The old Basket route has no confirmed live direct-payment contract and
+    // no in-repository caller. Do not reinterpret its legacy price as a wallet
+    // deposit. Continue through the authoritative server-priced product flow.
+    navigation.navigate('Products');
   };
 
   const renderItem = ({item}: {item: BasketItem}) => (
     <View style={styles.item}>
       <GlobalText style={{color: theme.colors.text}}>{item.title}</GlobalText>
       <GlobalText style={{color: theme.colors.text}}>
-        {(item.price / 10).toLocaleString('fa-IR')} تومان
+        قیمت نهایی در فروشگاه از سرور دریافت می‌شود
       </GlobalText>
     </View>
   );
@@ -80,28 +61,17 @@ export default function BasketScreen({basketItems}: Props) {
                 },
               ]}>
               <GlobalText style={[styles.alertText1, {color: theme.colors.text}]}>
-                پرداخت از مسیر امن کیف پول یارسلام انجام می‌شود.
+                مسیر پرداخت قدیمی این صفحه دیگر به درگاه معتبر متصل نیست.
               </GlobalText>
               <GlobalText style={{color: theme.colors.text}}>
-                برای کارت‌به‌کارت یا USDT ابتدا کیف پول خود را شارژ کنید.
+                برای جلوگیری از مبلغ یا سفارش اشتباه، خرید را از فروشگاه ادامه دهید؛ قیمت و کد بسته مستقیماً از سرور دریافت می‌شود.
               </GlobalText>
             </View>
-
-            <View
-              style={[styles.warningBox, {borderColor: theme.colors.border}]}>
-              <GlobalText style={[styles.warningText, {color: theme.colors.text}]}>
-                این مرحله فقط کیف پول را شارژ می‌کند. پس از تأیید واریز، به فروشگاه برگردید و بسته را با موجودی کیف پول خریداری کنید.
-              </GlobalText>
-            </View>
-
-            <GlobalText style={[styles.total, {color: theme.colors.text}]}>
-              مبلغ بسته: {(totalRials / 10).toLocaleString('fa-IR')} تومان
-            </GlobalText>
 
             <CustomButton
-              onPress={handleWalletDeposit}
+              onPress={handleContinueToProducts}
               gradient
-              label="رفتن به روش‌های شارژ امن کیف پول"
+              label="بازگشت به فروشگاه و انتخاب بسته"
               style={styles.btnText}
               disabled={!basketItems.length}
             />
@@ -119,12 +89,6 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#ccc',
     alignItems: 'flex-end',
-  },
-  total: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    textAlign: 'right',
-    marginVertical: 12,
   },
   alertBox: {
     padding: 15,
