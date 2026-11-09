@@ -19,9 +19,9 @@ export const useBlockMutation = () => {
       );
       console.log('rel', rel);
       console.log('variables', variables);
-      const feed = await queryClient.invalidateQueries(['feed']);
-      const suggestions = await queryClient.invalidateQueries(['suggestions']);
-      const relation = await queryClient.invalidateQueries(['relation', variables.targetId]); // به‌روزرسانی رابطه
+      const feed = await queryClient.invalidateQueries({queryKey: ['feed']});
+      const suggestions = await queryClient.invalidateQueries({queryKey: ['suggestions']});
+      const relation = await queryClient.invalidateQueries({queryKey: ['relation', variables.targetId]}); // به‌روزرسانی رابطه
 
       console.log('feed', feed);
       console.log('suggestions', suggestions);
