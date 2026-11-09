@@ -36,7 +36,7 @@ export type RootStackParamList = {
   FaceVerification: undefined;
   AccountActions: undefined;
   Notifications: undefined;
-  PaymentMethod: undefined;
+  PaymentMethod: {productId: string};
   Deposit: {
     /** Integer Iranian rials, matching ProductBundle.price in the API. */
     amountRials: number;
