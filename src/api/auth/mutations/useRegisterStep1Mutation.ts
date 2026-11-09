@@ -25,7 +25,7 @@ export function useRegisterStep1Mutation() {
       const errorMessage = err?.message || '';
       if (
         err.message === 'این شماره قبلاً ثبت‌نام کرده.' ||
-        err.code === 'EXISTING_USER'
+        (err as {code?: string}).code === 'EXISTING_USER'
       ) {
         showToast('این شماره ثبت شده است. از طریق فرم زیر وارد شوید', 'error');
 
