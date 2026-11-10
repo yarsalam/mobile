@@ -2,7 +2,7 @@ name: Android test APK
 
 on:
   push:
-    branches: [main, fix/mobile-wallet-checkout-idempotency-2026-11-08]
+    branches: [main, fix/mobile-wallet-checkout-idempotency-2026-11-08, fix/mobile-ai-provider-disclosure-2026-11-10]
     paths:
       - ".github/workflows/android-apk.yml"
       - ".github/workflows/android-signed-release.yml"
