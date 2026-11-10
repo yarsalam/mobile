@@ -203,7 +203,7 @@ jobs:
         run: npx tsc --noEmit
 
       - name: Run wallet checkout Jest tests (blocking)
-        run: npm test -- --runInBand src/api/mutations/payment/useBuyWithWallet.test.ts src/api/queries/aiAssistant.test.ts src/lib/moderationDecision.test.ts src/api/queries/messages.test.ts
+        run: npm test -- --runInBand src/api/mutations/payment/useBuyWithWallet.test.ts src/api/mutations/personality/useTextPersonality.test.ts src/api/queries/aiAssistant.test.ts src/lib/moderationDecision.test.ts src/api/queries/messages.test.ts
 
       - name: Run full Jest suite (blocking)
         run: npm test -- --runInBand --passWithNoTests
