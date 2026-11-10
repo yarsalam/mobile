@@ -112,4 +112,28 @@ describe('buyWithWallet idempotency', () => {
       'yarsalam:pending-wallet-checkout:42:vip-month',
     );
   });
+
+  it('coalesces concurrent callers for the same user and bundle', async () => {
+    let resolveRequest: ((value: unknown) => void) | undefined;
+    mockedFetch.mockImplementation(
+      () =>
+        new Promise(resolve => {
+          resolveRequest = resolve;
+        }) as any,
+    );
+
+    const first = buyWithWallet({bundleCode: 'vip-month', userId: 42});
+    const second = buyWithWallet({bundleCode: 'vip-month', userId: 42});
+
+    expect(second).toBe(first);
+    await Promise.resolve();
+    expect(mockedFetch).toHaveBeenCalledTimes(1);
+
+    resolveRequest?.({success: true});
+    await expect(Promise.all([first, second])).resolves.toEqual([
+      {success: true},
+      {success: true},
+    ]);
+  });
+
 });
