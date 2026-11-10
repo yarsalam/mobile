@@ -26,6 +26,7 @@ import {useModeratedSend} from '../../lib/useModeratedSend';
 import {useQueryClient} from '@tanstack/react-query';
 import {useChatMessages} from '../../api/mutations/messages/useChatMessages';
 import {useSuggestReply} from '../../api/mutations/assistant/aiAssistantHooks';
+import {requestReplySuggestionConsent} from '../../lib/requestReplySuggestionConsent';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 import type {RootStackParamList} from '../../../types/rootStackParamList';
 
@@ -196,38 +197,44 @@ const ChatScreen = ({route}: Props) => {
     sendWithModeration(inputText);
   }, [inputText, sendWithModeration]);
 
-  // پیشنهاد پاسخ فقط متن را در کادر قرار می‌دهد؛ ارسال همچنان با تأیید کاربر
-  // و عبور از همان مسیر moderation موجود انجام می‌شود.
+  // The backend sends the latest incoming message plus up to five prior
+  // messages in this chat to the configured external AI provider. Ask first.
   const handleSuggestReply = useCallback(() => {
     if (!latestIncomingMessage?.content || editingMessageId) return;
-    suggestReplyMutation.mutate(
-      {
-        targetUserId: userId,
-        message: latestIncomingMessage.content,
+    requestReplySuggestionConsent({
+      showModal,
+      hideModal,
+      onConfirm: () => {
+        suggestReplyMutation.mutate(
+          {
+            targetUserId: userId,
+            message: latestIncomingMessage.content,
+          },
+          {
+            onSuccess: (result: any) => {
+              const reply =
+                typeof result?.reply === 'string' ? result.reply.trim() : '';
+              if (!reply) {
+                showModal(
+                  'اشتراک لازم است',
+                  'برای استفاده از پیشنهاد پاسخ، اشتراک دستیار هوشمند باید فعال باشد.',
+                  [{text: 'باشه', onPress: hideModal}],
+                );
+                return;
+              }
+              setInputText(reply);
+            },
+            onError: (error: any) =>
+              showModal(
+                'پیشنهاد پاسخ آماده نشد',
+                error?.response?.data?.message ||
+                  'لطفاً کمی بعد دوباره تلاش کنید.',
+                [{text: 'باشه', onPress: hideModal}],
+              ),
+          },
+        );
       },
-      {
-        onSuccess: (result: any) => {
-          const reply =
-            typeof result?.reply === 'string' ? result.reply.trim() : '';
-          if (!reply) {
-            showModal(
-              'اشتراک لازم است',
-              'برای استفاده از پیشنهاد پاسخ، اشتراک دستیار هوشمند باید فعال باشد.',
-              [{text: 'باشه', onPress: hideModal}],
-            );
-            return;
-          }
-          setInputText(reply);
-        },
-        onError: (error: any) =>
-          showModal(
-            'پیشنهاد پاسخ آماده نشد',
-            error?.response?.data?.message ||
-              'لطفاً کمی بعد دوباره تلاش کنید.',
-            [{text: 'باشه', onPress: hideModal}],
-          ),
-      },
-    );
+    });
   }, [
     latestIncomingMessage,
     editingMessageId,
