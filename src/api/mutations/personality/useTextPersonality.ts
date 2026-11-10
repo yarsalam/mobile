@@ -43,13 +43,39 @@ const ESTIMATE_KEY = ['personality', 'text-ocean-estimate'] as const;
 
 const unwrap = <T,>(value: any): T => (value?.data ?? value) as T;
 
+export async function getTextAnalysisConsent() {
+  return unwrap<TextAnalysisConsent>(
+    await fetchWithAuth('/personality/text-analysis-consent'),
+  );
+}
+
+export async function getTextOceanEstimate() {
+  return unwrap<EstimateResponse>(
+    await fetchWithAuth('/personality/ocean/text-estimate'),
+  );
+}
+
+export async function setTextAnalysisConsent(enabled: boolean) {
+  return unwrap<TextAnalysisConsent>(
+    await fetchWithAuth('/personality/text-analysis-consent', {
+      method: 'PATCH',
+      body: JSON.stringify({enabled}),
+    }),
+  );
+}
+
+export async function runTextOceanEstimate() {
+  return unwrap<TextOceanAssessment>(
+    await fetchWithAuth('/personality/ocean/text-estimate', {
+      method: 'POST',
+    }),
+  );
+}
+
 export function useTextAnalysisConsent() {
   return useQuery({
     queryKey: CONSENT_KEY,
-    queryFn: async () =>
-      unwrap<TextAnalysisConsent>(
-        await fetchWithAuth('/personality/text-analysis-consent'),
-      ),
+    queryFn: getTextAnalysisConsent,
     staleTime: 30_000,
   });
 }
@@ -58,10 +84,7 @@ export function useTextOceanEstimate(enabled: boolean) {
   return useQuery({
     queryKey: ESTIMATE_KEY,
     enabled,
-    queryFn: async () =>
-      unwrap<EstimateResponse>(
-        await fetchWithAuth('/personality/ocean/text-estimate'),
-      ),
+    queryFn: getTextOceanEstimate,
     staleTime: 30_000,
   });
 }
@@ -69,13 +92,7 @@ export function useTextOceanEstimate(enabled: boolean) {
 export function useSetTextAnalysisConsent() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (enabled: boolean) =>
-      unwrap<TextAnalysisConsent>(
-        await fetchWithAuth('/personality/text-analysis-consent', {
-          method: 'PATCH',
-          body: JSON.stringify({enabled}),
-        }),
-      ),
+    mutationFn: setTextAnalysisConsent,
     onSuccess: async (consent) => {
       queryClient.setQueryData(CONSENT_KEY, consent);
       if (!consent.enabled) {
@@ -92,12 +109,7 @@ export function useSetTextAnalysisConsent() {
 export function useRunTextOceanEstimate() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async () =>
-      unwrap<TextOceanAssessment>(
-        await fetchWithAuth('/personality/ocean/text-estimate', {
-          method: 'POST',
-        }),
-      ),
+    mutationFn: runTextOceanEstimate,
     onSuccess: async (assessment) => {
       queryClient.setQueryData(ESTIMATE_KEY, {
         enabled: true,
