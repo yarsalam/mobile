@@ -115,10 +115,15 @@ describe('buyWithWallet idempotency', () => {
 
   it('coalesces concurrent callers for the same user and bundle', async () => {
     let resolveRequest: ((value: unknown) => void) | undefined;
+    let markFetchStarted: (() => void) | undefined;
+    const fetchStarted = new Promise<void>(resolve => {
+      markFetchStarted = resolve;
+    });
     mockedFetch.mockImplementation(
       () =>
         new Promise(resolve => {
           resolveRequest = resolve;
+          markFetchStarted?.();
         }) as any,
     );
 
@@ -126,7 +131,7 @@ describe('buyWithWallet idempotency', () => {
     const second = buyWithWallet({bundleCode: 'vip-month', userId: 42});
 
     expect(second).toBe(first);
-    await Promise.resolve();
+    await fetchStarted;
     expect(mockedFetch).toHaveBeenCalledTimes(1);
 
     resolveRequest?.({success: true});
