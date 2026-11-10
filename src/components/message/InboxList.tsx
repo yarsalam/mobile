@@ -6,25 +6,25 @@ import MessageList from './MessageList';
 
 const InboxList = () => {
   const { user } = useAuth();
-  const { data, isLoading, refetch } = useInboxGrouped(user?.id);
+  const { data, isLoading, refetch } = useInboxGrouped(user?.id ?? 0);
 
-  const mappedData = (data || []).map((msg) => ({
+  const mappedData = (data || []).map((msg: any) => ({
     userId: msg.userId,
     name: msg.name,
     avatarUrl: msg.avatar,
-    lastMessageTime: msg.lastFreeMessageTime || msg.lastPaidMessageTime,
-    lastMessageDate: msg.lastFreeMessageDate || msg.lastPaidMessageDate,
+    lastMessageTime: msg.lastFreeMessageTime || msg.lastPaidMessageTime || '',
+    lastMessageDate: msg.lastFreeMessageDate || msg.lastPaidMessageDate || '',
     snippet: msg.lastMessageSnippet,
     unreadCount: msg.unreadFreeMessagesCount || msg.unreadPaidMessagesCount || 0,
-    type: 'inbox',
+    type: 'inbox' as const,
   }));
 
   return (
     <MessageList
       data={mappedData}
       isLoading={isLoading}
-      totalUnread={mappedData.reduce((sum, d) => sum + d.unreadCount, 0)}
-      onRefresh={refetch}
+      totalUnread={mappedData.reduce((sum: number, d: {unreadCount: number}) => sum + d.unreadCount, 0)}
+      onRefresh={() => { void refetch(); }}
       title="دریافتی"
     />
   );

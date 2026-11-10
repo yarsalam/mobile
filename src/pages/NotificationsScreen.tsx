@@ -1,6 +1,6 @@
 import React, {useCallback} from 'react';
 import {
-  FlatList, TouchableOpacity, StyleSheet,
+  FlatList, StyleSheet,
   ActivityIndicator, View,
 } from 'react-native';
 import {useFocusEffect} from '@react-navigation/native';
@@ -24,12 +24,12 @@ const TYPE_CONFIG: Record<string, {icon: string; color: string; label: string}> 
 const NotificationsScreen = () => {
   const {theme} = useTheme();
   const {data: notifications = [], isLoading, isError, refetch} = useSystemNotifications();
-  const markAllRead = useMarkSystemRead();
+  const {mutate: markAllRead} = useMarkSystemRead();
 
   useFocusEffect(
     useCallback(() => {
-      markAllRead.mutate();
-    }, []),
+      markAllRead();
+    }, [markAllRead]),
   );
 
   const renderItem = ({item}: any) => {

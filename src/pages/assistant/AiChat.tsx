@@ -9,31 +9,33 @@ import {
   StyleSheet,
 } from 'react-native';
 import MainLayout from '../../theme/MainLayout';
+import type {NativeStackScreenProps} from '@react-navigation/native-stack';
+import type {RootStackParamList} from '../../../types/rootStackParamList';
 import GlobalText from '../../components/GlobalText';
-import {useTheme} from '../../context/MainContext';
 import {
   useConversation,
   useSendMessage,
 } from '../../api/mutations/assistant/aiAssistantHooks';
 
-const AiChat = ({route}) => {
+type Props = NativeStackScreenProps<RootStackParamList, 'AiChat'>;
+
+const AiChat = ({route}: Props) => {
   const {convId} = route.params;
-  const {theme} = useTheme();
   const [inputText, setInputText] = useState('');
-  const flatListRef = useRef(null);
+  const flatListRef = useRef<FlatList<any>>(null);
 
   const {data: conversation, isLoading} = useConversation(convId);
-  const sendMutation = useSendMessage();
+  const {mutate: sendMessage} = useSendMessage();
 
   const messages = conversation?.messages || [];
 
   const handleSend = useCallback(() => {
     if (!inputText.trim()) return;
-    sendMutation.mutate(
+    sendMessage(
       {convId, message: inputText},
       {onSuccess: () => setInputText('')},
     );
-  }, [inputText, convId]);
+  }, [inputText, convId, sendMessage]);
 
   const renderMessage = ({item}: any) => {
     const isUser = item.sender === 'user';

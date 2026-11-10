@@ -1,4 +1,19 @@
-pluginManagement { includeBuild("../node_modules/@react-native/gradle-plugin") }
+pluginManagement {
+    repositories {
+        // Mirror Maven Central and Google Maven to reduce single-provider 5xx/timeout failures.
+        maven { url "https://maven.aliyun.com/repository/gradle-plugin" }
+        maven { url "https://maven.aliyun.com/repository/google" }
+        maven {
+            url "https://maven.aliyun.com/repository/central"
+            // Force POM metadata; Gradle module metadata can redirect the Kotlin compiler JAR to GitHub Releases.
+            metadataSources { mavenPom(); artifact() }
+        }
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+    includeBuild("../node_modules/@react-native/gradle-plugin")
+}
 plugins { id("com.facebook.react.settings") }
 extensions.configure(com.facebook.react.ReactSettingsExtension){ ex -> ex.autolinkLibrariesFromCommand() }
 rootProject.name = 'yarsalam'

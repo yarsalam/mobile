@@ -2,7 +2,6 @@ import React from 'react';
 import {Modal, View, StyleSheet, TouchableOpacity} from 'react-native';
 import GlobalText from '../GlobalText';
 import {useTheme} from '../../context/MainContext';
-import {transformer} from 'zod';
 
 interface Props {
   visible: boolean;
@@ -18,7 +17,7 @@ const ConfirmLogoutModal: React.FC<Props> = ({
   loading,
 }) => {
   const {theme} = useTheme();
-  const styles = getStyles(theme);
+  const styles = getStyles();
   return (
     <Modal transparent animationType="fade" visible={visible}>
       <View style={styles.overlay}>
@@ -60,7 +59,7 @@ const ConfirmLogoutModal: React.FC<Props> = ({
     </Modal>
   );
 };
-const getStyles = (theme: any) =>
+const getStyles = () =>
   StyleSheet.create({
     overlay: {
       flex: 1,

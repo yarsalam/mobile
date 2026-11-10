@@ -12,6 +12,8 @@ import GlobalText from '../../components/GlobalText';
 import {useTheme} from '../../context/MainContext';
 import {useAuth} from '../../context/AuthContext';
 import {useNavigation} from '@react-navigation/native';
+import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
+import type {RootStackParamList} from '../../../types/rootStackParamList';
 import {useTicketsList} from '../../api/mutations/tickets/useTicketsList';
 import CustomButton from '../../components/CustomButtonProps';
 
@@ -45,7 +47,7 @@ const categoryLabel: Record<string, string> = {
 const SupportListScreen = () => {
   const {user} = useAuth();
   const {theme} = useTheme();
-  const navigation = useNavigation();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const {data: tickets, isLoading, refetch} = useTicketsList(user?.id);
   const styles = getStyles(theme);
 
@@ -61,10 +63,7 @@ const SupportListScreen = () => {
       <TouchableOpacity
         style={styles.card}
         onPress={() =>
-          navigation.navigate(
-            'TicketDetail' as never,
-            {ticketId: item.id} as never,
-          )
+          navigation.navigate('TicketDetail', {ticketId: item.id})
         }
         activeOpacity={0.8}>
         {/* نوار رنگی سمت راست */}
@@ -123,7 +122,7 @@ const SupportListScreen = () => {
         renderItem={renderItem}
         contentContainerStyle={styles.list}
         refreshControl={
-          <RefreshControl refreshing={isLoading} onRefresh={refetch} />
+          <RefreshControl refreshing={isLoading} onRefresh={() => { void refetch(); }} />
         }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
@@ -137,7 +136,7 @@ const SupportListScreen = () => {
         ListFooterComponent={
           <CustomButton
             label="+ ثبت تیکت جدید"
-            onPress={() => navigation.navigate('CreateTicket' as never)}
+            onPress={() => navigation.navigate('CreateTicket')}
             gradient
             style={styles.fab}
           />

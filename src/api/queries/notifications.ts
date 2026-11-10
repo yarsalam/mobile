@@ -13,3 +13,5 @@ export const fetchSystemNotifications = () => fetchWithAuth('/notifications/syst
 export const fetchNotifications = () => fetchWithAuth('/notifications');
 export const markAsRead = (notificationId: number) =>
   fetchWithAuth(`/notifications/read/${notificationId}`, {method: 'PATCH'});
+
+export const countUnread = () => fetchWithAuth('/notifications/unread/count');

@@ -8,13 +8,17 @@ import FaceVerification from '../../components/image/FaceVerification';
 
 
 const VerificationScreen = () => {
-  const {data: status} = useVerificationStatus();
+  const {data: status, isError} = useVerificationStatus();
 
   return (
     <MainLayout>
       <SectionWithLine text="تأیید هویت" />
       <View style={styles.container}>
-        {status?.verified ? (
+        {isError ? (
+          <GlobalText style={styles.infoText}>
+            سرویس وضعیت و درخواست تأیید هویت هنوز در API کاربر فعال نشده است؛ در حال حاضر امکان ثبت یا تأیید درخواست از داخل اپ وجود ندارد.
+          </GlobalText>
+        ) : status?.verified ? (
           <GlobalText style={styles.successText}>
             ✅ حساب شما قبلاً تأیید شده است
             {status.badge && ` (${status.badge})`}

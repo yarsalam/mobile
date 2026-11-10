@@ -21,7 +21,7 @@ import {NativeStackScreenProps} from '@react-navigation/native-stack';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'TicketDetail'>;
 
-const TicketDetailScreen = ({route, navigation}: Props) => {
+const TicketDetailScreen = ({route}: Props) => {
   const {ticketId} = route.params;
   const {user} = useAuth();
   const {theme} = useTheme();

@@ -2,22 +2,33 @@ name: Android test APK
 
 on:
   push:
-    branches: [main]
+    branches: [main, fix/mobile-wallet-checkout-idempotency-2026-11-08]
     paths:
       - ".github/workflows/android-apk.yml"
+      - ".github/workflows/android-signed-release.yml"
       - "src/**"
       - "android/**"
       - "package.json"
       - "package-lock.json"
+      - "jest.config.js"
+      - "jest.setup.js"
+      - "__tests__/**"
       - "app.json"
+      - "types/**"
   pull_request:
     branches: [main]
     paths:
+      - ".github/workflows/android-apk.yml"
+      - ".github/workflows/android-signed-release.yml"
       - "src/**"
       - "android/**"
       - "package.json"
       - "package-lock.json"
+      - "jest.config.js"
+      - "jest.setup.js"
+      - "__tests__/**"
       - "app.json"
+      - "types/**"
   workflow_dispatch:
     inputs:
       api_base_url:
@@ -26,10 +37,15 @@ on:
         default: "https://api.yarsalam.top"
         type: string
       release_tag:
-        description: "Unique tag to publish a public prerelease (next available default: test-v0.1.3)"
+        description: "Unique tag for an explicitly approved test prerelease"
         required: false
-        default: "test-v0.1.3"
+        default: "test-v0.1.4"
         type: string
+      publish_prerelease:
+        description: "Publish the test APK as a public GitHub prerelease (default off)"
+        required: true
+        default: false
+        type: boolean
       source_ref:
         description: "Source branch to build (use main after merging this PR)"
         required: true
@@ -39,6 +55,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: android-test-apk-${{ github.event.pull_request.head.ref || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-test-apk:
     name: Lint, test and build standalone Android test APK
@@ -47,10 +67,11 @@ jobs:
     env:
       API_BASE_URL: ${{ inputs.api_base_url || 'https://api.yarsalam.top' }}
     steps:
-      - name: Checkout source
+      - name: Checkout source branch
         uses: actions/checkout@v5
         with:
-          ref: ${{ inputs.source_ref || github.ref }}
+          ref: ${{ github.event.pull_request.head.ref || inputs.source_ref || github.ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Node.js
         uses: actions/setup-node@v6
@@ -73,8 +94,42 @@ jobs:
         run: |
           sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0" "ndk;27.1.12297006"
 
-      - name: Install JavaScript dependencies
+      - name: Install locked JavaScript dependencies
         run: npm ci
+
+      - name: Audit mobile production dependencies
+        id: mobile-audit
+        shell: bash
+        run: |
+          mkdir -p security-report
+          npm audit --omit=dev --json > security-report/npm-audit-production.json || true
+          node <<'NODE'
+          const fs = require('node:fs');
+          const report = JSON.parse(fs.readFileSync('security-report/npm-audit-production.json', 'utf8'));
+          const counts = report.metadata?.vulnerabilities ?? {};
+          const summary = [
+            '## Mobile production dependency audit',
+            '',
+            '| Severity | Count |',
+            '|---|---:|',
+            ...['critical','high','moderate','low','info'].map(k => `| ${k} | ${counts[k] ?? 0} |`),
+            '',
+            `Total: ${counts.total ?? 0}`
+          ].join(String.fromCharCode(10));
+          fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary);
+          if ((counts.critical ?? 0) > 0 || (counts.high ?? 0) > 0) {
+            console.error(`Blocking release build: ${counts.critical ?? 0} critical and ${counts.high ?? 0} high production dependency vulnerabilities remain.`);
+            process.exit(1);
+          }
+          NODE
+      - name: Upload mobile dependency audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: yarsalam-mobile-dependency-audit
+          path: security-report/npm-audit-production.json
+          retention-days: 30
+          if-no-files-found: ignore
 
       - name: Normalize mislabeled WebP images before Android resource compilation
         run: |
@@ -137,31 +192,53 @@ jobs:
           path.write_text(chr(10).join(lines) + chr(10))
           PY
 
-      - name: Lint (non-blocking for test APK)
+      - name: Lint wallet checkout changes (blocking)
+        run: npx eslint src/api/mutations/payment/useBuyWithWallet.ts src/api/mutations/payment/useBuyWithWallet.test.ts src/api/queries/aiAssistant.ts src/api/queries/aiAssistant.test.ts src/api/mutations/assistant/aiAssistantHooks.ts src/components/products/ProductCard.tsx src/components/BasketScreen.tsx src/pages/payment/Basket.tsx types/rootStackParamList.ts src/pages/messages/ChatScreen.tsx src/lib/useModeratedSend.ts src/lib/moderationDecision.ts src/lib/moderationDecision.test.ts src/api/queries/messages.ts src/api/queries/messages.test.ts src/api/mutations/messages/useSendMessage.ts src/api/mutations/useModerationCheck.ts src/api/mutations/personality/useTextPersonality.ts src/api/mutations/personality/useTextPersonality.test.ts src/components/personality/TextPersonalityAnalysisCard.tsx src/pages/assistant/AiAdvice.tsx src/pages/AccountActionsScreen.tsx
+
+      - name: Audit repository-wide lint baseline (non-blocking)
         run: npm run lint
         continue-on-error: true
 
-      - name: Run Jest tests (non-blocking for test APK)
+      - name: Type-check the React Native application (blocking)
+        run: npx tsc --noEmit
+
+      - name: Run wallet checkout Jest tests (blocking)
+        run: npm test -- --runInBand src/api/mutations/payment/useBuyWithWallet.test.ts src/api/mutations/personality/useTextPersonality.test.ts src/api/queries/aiAssistant.test.ts src/lib/moderationDecision.test.ts src/api/queries/messages.test.ts
+
+      - name: Run full Jest suite (blocking)
         run: npm test -- --runInBand --passWithNoTests
-        continue-on-error: true
 
       - name: Build standalone Android test APK (bundles JavaScript)
         run: |
           cd android
-          ./gradlew --no-daemon --stacktrace assembleRelease
+          ./gradlew --no-daemon --stacktrace assembleDebug
+
+      - name: Verify standalone JavaScript bundle is packaged
+        shell: bash
+        run: |
+          set -euo pipefail
+          OUT="android/app/build/outputs/apk/debug"
+          for apk in "$OUT/app-arm64-v8a-debug.apk" "$OUT/app-armeabi-v7a-debug.apk"; do
+            test -s "$apk"
+            if ! unzip -Z1 "$apk" | grep -Fxq "assets/index.android.bundle"; then
+              echo "::error::Standalone APK is missing assets/index.android.bundle: $apk"
+              exit 1
+            fi
+            echo "Verified embedded JS bundle: $apk"
+          done
 
       - name: Prepare per-ABI APKs and checksums
         shell: bash
         run: |
           set -euo pipefail
-          OUT="android/app/build/outputs/apk/release"
+          OUT="android/app/build/outputs/apk/debug"
           mkdir -p dist
-          test -s "$OUT/app-arm64-v8a-release.apk"
-          test -s "$OUT/app-armeabi-v7a-release.apk"
-          cp "$OUT/app-arm64-v8a-release.apk" dist/yarsalam-arm64-v8a.apk
-          cp "$OUT/app-armeabi-v7a-release.apk" dist/yarsalam-armeabi-v7a.apk
+          test -s "$OUT/app-arm64-v8a-debug.apk"
+          test -s "$OUT/app-armeabi-v7a-debug.apk"
+          cp "$OUT/app-arm64-v8a-debug.apk" dist/yarsalam-test-arm64-v8a.apk
+          cp "$OUT/app-armeabi-v7a-debug.apk" dist/yarsalam-test-armeabi-v7a.apk
           cd dist
-          sha256sum yarsalam-arm64-v8a.apk yarsalam-armeabi-v7a.apk > SHA256SUMS.txt
+          sha256sum yarsalam-test-arm64-v8a.apk yarsalam-test-armeabi-v7a.apk > SHA256SUMS.txt
           git rev-parse HEAD > SOURCE_COMMIT.txt
           echo "Individual downloadable APK sizes:"
           du -h yarsalam-*.apk
@@ -171,8 +248,8 @@ jobs:
         with:
           name: yarsalam-test-apks
           path: |
-            dist/yarsalam-arm64-v8a.apk
-            dist/yarsalam-armeabi-v7a.apk
+            dist/yarsalam-test-arm64-v8a.apk
+            dist/yarsalam-test-armeabi-v7a.apk
             dist/SHA256SUMS.txt
             dist/SOURCE_COMMIT.txt
           if-no-files-found: error
@@ -180,7 +257,7 @@ jobs:
 
   publish-public-prerelease:
     name: Publish optional public GitHub prerelease
-    if: (github.event_name == 'workflow_dispatch' && inputs.release_tag != '') || (github.event_name == 'push' && contains(github.event.head_commit.message, '[publish-test-apk]'))
+    if: (github.event_name == 'workflow_dispatch' && inputs.publish_prerelease == true && inputs.release_tag != '') || (github.event_name == 'push' && contains(github.event.head_commit.message, '[publish-test-apk]'))
     needs: build-test-apk
     runs-on: ubuntu-latest
     permissions:
@@ -188,7 +265,7 @@ jobs:
     steps:
       - name: Validate release tag
         env:
-          RELEASE_TAG: ${{ inputs.release_tag || 'test-v0.1.3' }}
+          RELEASE_TAG: ${{ inputs.release_tag || 'test-v0.1.4' }}
         run: |
           if [[ ! "$RELEASE_TAG" =~ ^[A-Za-z0-9._-]+$ ]]; then
             echo "release_tag may contain only letters, numbers, dots, underscores and hyphens."
@@ -204,19 +281,19 @@ jobs:
       - name: Publish test APK as a public prerelease
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ inputs.release_tag || 'test-v0.1.3' }}
+          RELEASE_TAG: ${{ inputs.release_tag || 'test-v0.1.4' }}
         run: |
           cat > release-notes.md <<'NOTES'
           Automated test build from GitHub Actions.
 
-          Download yarsalam-arm64-v8a.apk for most modern Android phones (64-bit ARM). If it is not compatible with the device, try yarsalam-armeabi-v7a.apk (32-bit ARM).
+          Download yarsalam-test-arm64-v8a.apk for most modern Android phones (64-bit ARM). If it is not compatible with the device, try yarsalam-test-armeabi-v7a.apk (32-bit ARM).
 
-          These APKs bundle JavaScript and do not require Metro. They are signed with the repository debug key for testing, not a production signing key. They use the HTTPS API URL supplied to the workflow. Do not use them for a public production rollout.
+          These APKs bundle JavaScript and do not require Metro. They are debug-signed test artifacts, not production release APKs. Production releases require the private owner-controlled keystore and the signed release workflow.
           NOTES
           # Each release run needs a unique tag; existing tags are not overwritten.
           gh release create "$RELEASE_TAG" \
-            dist/yarsalam-arm64-v8a.apk \
-            dist/yarsalam-armeabi-v7a.apk \
+            dist/yarsalam-test-arm64-v8a.apk \
+            dist/yarsalam-test-armeabi-v7a.apk \
             dist/SHA256SUMS.txt \
             --repo "$GITHUB_REPOSITORY" \
             --target "$(cat dist/SOURCE_COMMIT.txt)" \

@@ -18,10 +18,9 @@ react {
     // cliFile = file("../../node_modules/react-native/cli.js")
 
     /* Variants */
-    //   The list of variants to that are debuggable. For those we're going to
-    //   skip the bundling of the JS bundle and the assets. Default is "debug", "debugOptimized".
-    //   If you add flavors like lite, prod, etc. you'll have to list your debuggableVariants.
-    // debuggableVariants = ["liteDebug", "liteDebugOptimized", "prodDebug", "prodDebugOptimized"]
+    // The downloadable debug test APK must run without Metro. Do not treat
+    // the debug variant as Metro-debuggable: Gradle must embed index.android.bundle.
+    debuggableVariants = []
 
     /* Bundling */
     //   A list containing the node command and its flags. Default is just 'node'.
@@ -59,6 +58,27 @@ react {
  */
 def enableProguardInReleaseBuilds = false
 
+// Production release signing must use a private owner-controlled keystore.
+// Test builds use the debug variant and never reuse the debug key for release.
+def releaseSigningRequested = gradle.startParameter.taskNames.any {
+    it.toLowerCase().contains("release")
+}
+def releaseStoreFilePath = System.getenv("ANDROID_RELEASE_STORE_FILE")
+def releaseStorePassword = System.getenv("ANDROID_RELEASE_STORE_PASSWORD")
+def releaseKeyAlias = System.getenv("ANDROID_RELEASE_KEY_ALIAS")
+def releaseKeyPassword = System.getenv("ANDROID_RELEASE_KEY_PASSWORD")
+
+if (releaseSigningRequested && [
+    releaseStoreFilePath,
+    releaseStorePassword,
+    releaseKeyAlias,
+    releaseKeyPassword
+].any { !it }) {
+    throw new GradleException(
+        "Release signing requires ANDROID_RELEASE_STORE_FILE, ANDROID_RELEASE_STORE_PASSWORD, ANDROID_RELEASE_KEY_ALIAS and ANDROID_RELEASE_KEY_PASSWORD. Debug signing is forbidden for production releases."
+    )
+}
+
 /**
  * The preferred build flavor of JavaScriptCore (JSC)
  *
@@ -82,8 +102,10 @@ android {
         applicationId "com.yarsalam"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 3
-        versionName "1.0.2"
+        versionCode 4
+        versionName "1.0.0"
+        // Public API uses HTTPS; do not permit cleartext HTTP in any build variant.
+        manifestPlaceholders = [usesCleartextTraffic: "false"]
     }
 
     // Direct-download APKs are split by phone ABI to avoid bundling all
@@ -103,15 +125,21 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
+        release {
+            if (releaseStoreFilePath) {
+                storeFile file(releaseStoreFilePath)
+                storePassword releaseStorePassword
+                keyAlias releaseKeyAlias
+                keyPassword releaseKeyPassword
+            }
+        }
     }
     buildTypes {
         debug {
             signingConfig signingConfigs.debug
         }
         release {
-            // Caution! In production, you need to generate your own keystore file.
-            // see https://reactnative.dev/docs/signed-apk-android.
-            signingConfig signingConfigs.debug
+            signingConfig signingConfigs.release
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
         }

@@ -3,8 +3,11 @@ import {View, StyleSheet, TouchableOpacity, Alert, Modal} from 'react-native';
 import GlobalText from '../GlobalText';
 import CustomButton from '../CustomButtonProps';
 import {useTheme} from '../../context/MainContext';
+import {useAuth} from '../../context/AuthContext';
 import {ProductOption} from '../../../types/productsType';
 import {useNavigation} from '@react-navigation/native';
+import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
+import type {RootStackParamList} from '../../../types/rootStackParamList';
 import {useWallet} from '../../api/queries/useWallet';
 import {useBuyWithWallet} from '../../api/mutations/payment/useBuyWithWallet';
 
@@ -23,7 +26,8 @@ export default function ProductCard({
 }: Props) {
   const {theme} = useTheme();
   const styles = getStyles(theme);
-  const navigation = useNavigation();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const {user} = useAuth();
   const [selected, setSelected] = useState<ProductOption | null>(null);
   const [showConfirm, setShowConfirm] = useState(false);
 
@@ -42,21 +46,29 @@ export default function ProductCard({
     } else {
       // کمبود موجودی — رفتن به شارژ
       navigation.navigate(
-        'Deposit' as never,
+        'Deposit',
         {
           amountRials: selectedPrice - walletBalance, // کمبود دقیق
           productLabel: `${title} — ${selected.label}`,
           bundleCode: selected.id,
-        } as never,
+        },
       );
     }
   };
 
   const confirmPurchase = async () => {
     if (!selected) return;
+    if (!user?.id || !Number.isSafeInteger(Number(user.id)) || Number(user.id) <= 0) {
+      Alert.alert('خطا', 'برای خرید ابتدا وارد حساب کاربری شوید.');
+      return;
+    }
+
     setShowConfirm(false);
     try {
-      await buyMutation.mutateAsync(selected.id);
+      await buyMutation.mutateAsync({
+        bundleCode: String(selected.id),
+        userId: Number(user.id),
+      });
       Alert.alert('✅ موفق', `${title} با موفقیت فعال شد!`);
     } catch (err: any) {
       const code = err?.code || err?.message;

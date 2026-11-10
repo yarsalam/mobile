@@ -4,7 +4,7 @@ export const useDeleteSingleMessage = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (messageId: number) => deleteSingleMessage(messageId),
-    onSuccess: (data, messageId) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({queryKey: ['chat']});
       queryClient.invalidateQueries({queryKey: ['inboxGrouped']});
       queryClient.invalidateQueries({queryKey: ['sentGrouped']});

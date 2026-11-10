@@ -51,7 +51,7 @@ async function checkNotifications() {
         pressAction: {id: 'default'},
       },
     });
-  } catch (error) {
+  } catch {
     // Background checks should not crash app startup.
     if (__DEV__) console.warn('[checkNotifications] request failed');
   }

@@ -1,5 +1,5 @@
 import React from 'react';
-import {View, TouchableOpacity, StyleSheet, Platform} from 'react-native';
+import {View, TouchableOpacity, StyleSheet} from 'react-native';
 import GlobalText from '../GlobalText';
 import {useTheme} from '../../context/MainContext';
 

@@ -7,7 +7,6 @@ import {
   Image,
   ScrollView,
 } from 'react-native';
-import {useTheme} from '../../context/MainContext';
 import {useFilter} from '../../context/FilterContext';
 import {useNavigation} from '@react-navigation/native';
 import GlobalText from '../../components/GlobalText';
@@ -18,7 +17,6 @@ import SectionWithLine from '../../components/SectionWithLine';
 import CustomButton from '../../components/CustomButtonProps';
 
 const FilterScreen = () => {
-  const {theme} = useTheme();
   const navigation = useNavigation();
   const {filters, setFilters, clearFilters} = useFilter();
   const [subCategory, setSubCategory] = useState<string | null>(null);

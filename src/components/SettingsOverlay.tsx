@@ -2,7 +2,6 @@ import React from 'react';
 import {
   View,
   Animated,
-  Dimensions,
   TouchableOpacity,
   StyleSheet,
   ScrollView,
@@ -13,8 +12,6 @@ import {useImageContext} from '../context/ImageContext';
 import {getUserAvatarSource} from '../utils/imageUtils';
 import GlobalText from './GlobalText';
 import ThemePicker from './ThemePicker';
-
-const {width} = Dimensions.get('window');
 
 interface SettingsOverlayProps {
   visible: boolean;

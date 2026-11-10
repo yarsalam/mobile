@@ -3,10 +3,8 @@ import {useAuth} from '../../../context/AuthContext';
 
 import {
   countUnread,
-  fetchInteractionCount,
   fetchInteractions,
   fetchNotifications,
-  fetchSystemCount,
   fetchSystemNotifications,
   markAsRead,
 } from '../../queries/notifications';

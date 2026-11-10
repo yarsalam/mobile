@@ -5,17 +5,17 @@ import MessageList from './MessageList';
 
 const SentList = () => {
   const { user } = useAuth();
-  const { data, isLoading, refetch } = useSendGrouped(user?.id);
+  const { data, isLoading, refetch } = useSendGrouped(user?.id ?? 0);
 
-  const mappedData = (data || []).map((msg) => ({
+  const mappedData = (data || []).map((msg: any) => ({
     userId: msg.userId,
     name: msg.name,
     avatarUrl: msg.avatar,
-    lastMessageTime: msg.lastFreeMessageTime || msg.lastPaidMessageTime,
-    lastMessageDate: msg.lastFreeMessageDate || msg.lastPaidMessageDate,
+    lastMessageTime: msg.lastFreeMessageTime || msg.lastPaidMessageTime || '',
+    lastMessageDate: msg.lastFreeMessageDate || msg.lastPaidMessageDate || '',
     snippet: msg.lastMessageSnippet,
     unreadCount: 0, // پیام ارسالی برای فرستنده خوانده نشده محسوب نمی‌شود
-    type: 'sent',
+    type: 'sent' as const,
   }));
 
   return (
@@ -23,7 +23,7 @@ const SentList = () => {
       data={mappedData}
       isLoading={isLoading}
       totalUnread={0}
-      onRefresh={refetch}
+      onRefresh={() => { void refetch(); }}
       title="ارسالی"
     />
   );

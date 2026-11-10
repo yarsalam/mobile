@@ -1,6 +1,7 @@
 import React, {useState} from 'react';
 import {View, StyleSheet, TouchableOpacity, ActivityIndicator, Alert} from 'react-native';
-import {useRoute, useNavigation} from '@react-navigation/native';
+import {useRoute, useNavigation, RouteProp} from '@react-navigation/native';
+import type {RootStackParamList} from '../../../types/rootStackParamList';
 import MainLayout from '../../theme/MainLayout';
 import SectionWithLine from '../../components/SectionWithLine';
 import GlobalText from '../../components/GlobalText';
@@ -17,8 +18,8 @@ export default function PaymentMethod() {
   const {theme} = useTheme();
   const styles = getStyles(theme);
   const navigation = useNavigation();
-  const route = useRoute();
-  const {productId} = route.params as {productId: string};
+  const route = useRoute<RouteProp<RootStackParamList, 'PaymentMethod'>>();
+  const {productId} = route.params;
 
   const {data: productGroups, isLoading: productsLoading} = usePublicProducts();
   const products = [

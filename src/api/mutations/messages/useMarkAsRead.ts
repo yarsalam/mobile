@@ -6,7 +6,7 @@ export const useMarkAsRead = () => {
   return useMutation({
     mutationFn: ({ targetUserId }: { targetUserId: number }) =>
       markAsRead(targetUserId),
-    onSuccess: (data, variables) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['inboxGrouped'] });
       queryClient.invalidateQueries({ queryKey: ['sentGrouped'] });
       queryClient.invalidateQueries({ queryKey: ['unreadMessages'] });

@@ -23,7 +23,6 @@ import CryptoPaymentSheet from '../../components/CardPaymentSheet/CryptoPaymentS
  * params:
  *   amountRials:  number  — مبلغ پیشنهادی برای شارژ (ریال)
  *   productLabel: string  — نام محصول هدف (برای نمایش)
- *   bundleCode:   string  — بعد از شارژ موفق، به Products برمی‌گردد
  */
 export default function DepositScreen() {
   const { theme } = useTheme();
@@ -32,10 +31,9 @@ export default function DepositScreen() {
   const route = useRoute();
   const qc = useQueryClient();
 
-  const { amountRials, productLabel, bundleCode } = route.params as {
+  const { amountRials, productLabel } = route.params as {
     amountRials: number;
     productLabel: string;
-    bundleCode: string;
   };
 
   const [loading, setLoading] = useState(false);

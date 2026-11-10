@@ -1,16 +1,13 @@
-import React, {createContext, useContext, useState, useEffect} from 'react';
+import React, {createContext, useContext, useState, useEffect, useCallback, useRef} from 'react';
 import {
   View,
   Modal,
   TouchableOpacity,
   StyleSheet,
-  Dimensions,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import GlobalText from '../GlobalText';
 import {useTheme} from '../../context/MainContext';
-
-const {width, height} = Dimensions.get('window');
 
 type HintStep = {
   id: string;
@@ -29,6 +26,7 @@ const HintTourContext = createContext<HintTourContextType | undefined>(
 
 export const HintTourProvider = ({children}: {children: React.ReactNode}) => {
   const [steps, setSteps] = useState<HintStep[]>([]);
+  const stepsRef = useRef<HintStep[]>([]);
   const [currentIndex, setCurrentIndex] = useState(-1);
   const [targetPosition, setTargetPosition] = useState({
     x: 0,
@@ -39,22 +37,26 @@ export const HintTourProvider = ({children}: {children: React.ReactNode}) => {
   const [visible, setVisible] = useState(false);
   const {theme} = useTheme();
 
-  const registerStep = (step: HintStep) => {
-    setSteps(prev => [...prev, step]);
-  };
+  const registerStep = useCallback((step: HintStep) => {
+    // Keep a ref so callback identity stays stable and effects in screens
+    // don't register duplicate steps when the context rerenders.
+    if (stepsRef.current.some(existing => existing.id === step.id)) return;
+    stepsRef.current = [...stepsRef.current, step];
+    setSteps(stepsRef.current);
+  }, []);
 
-  const startTour = async () => {
+  const startTour = useCallback(async () => {
     const tourSeen = await AsyncStorage.getItem('hint_tour_seen');
-    if (tourSeen === 'true' || steps.length === 0) return;
+    if (tourSeen === 'true' || stepsRef.current.length === 0) return;
     setCurrentIndex(0);
     setVisible(true);
-  };
+  }, []);
 
   useEffect(() => {
     if (currentIndex >= 0 && currentIndex < steps.length) {
       const step = steps[currentIndex];
       if (step.targetRef.current) {
-        step.targetRef.current.measure((x, y, w, h, pageX, pageY) => {
+        step.targetRef.current.measure((x: number, y: number, w: number, h: number, pageX: number, pageY: number) => {
           setTargetPosition({x: pageX, y: pageY, width: w, height: h});
         });
       }

@@ -5,6 +5,8 @@ import SectionWithLine from '../../components/SectionWithLine';
 import GlobalText from '../../components/GlobalText';
 import {useTheme} from '../../context/MainContext';
 import {useNavigation} from '@react-navigation/native';
+import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
+import type {RootStackParamList} from '../../../types/rootStackParamList';
 import {
   useConversations,
   useStartConversation,
@@ -12,7 +14,7 @@ import {
 
 const AiAssistantMain = () => {
   const {theme} = useTheme();
-  const navigation = useNavigation();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const {data: conversations, isLoading, refetch} = useConversations();
   const startMutation = useStartConversation();
 
@@ -46,7 +48,7 @@ const AiAssistantMain = () => {
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.adviceBtn, {backgroundColor: theme.colors.secondary}]}
-          onPress={() => navigation.navigate('AiAdvice' as never)}>
+          onPress={() => navigation.navigate('AiAdvice')}>
           <GlobalText style={{color: '#fff'}}>📊 مشاوره و راهنما</GlobalText>
         </TouchableOpacity>
       </View>

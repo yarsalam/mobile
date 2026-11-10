@@ -11,7 +11,6 @@ import ToastHandler from '../ToastHandler';
 import MainImage from '../image/MainImage';
 import ProgressBar from '../ProgressBar';
 import FormCard from '../FormCard';
-import { useTheme } from '../../context/MainContext';
 
 interface AuthLayoutProps {
   showMainImage?: boolean;
@@ -32,8 +31,7 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({
   cardTitleStyle = { paddingTop: 20, paddingBottom: 30 },
   progress,
 }) => {
-  const { theme } = useTheme();
-  const styles = getStyles(theme);
+  const styles = getStyles();
 
   return (
     <KeyboardAvoidingView
@@ -59,7 +57,7 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({
   );
 };
 
-const getStyles = (theme: any) =>
+const getStyles = () =>
   StyleSheet.create({
     header: { alignItems: 'center' },
   });

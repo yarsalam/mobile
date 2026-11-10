@@ -49,7 +49,7 @@ const ConfirmModal: React.FC<Props> = ({
 
             <TouchableOpacity
               onPress={onConfirm}
-              style={styles.confirm}>
+              style={[styles.confirm, confirmColor ? {backgroundColor: confirmColor} : undefined]}>
               <GlobalText>{confirmText}</GlobalText>
             </TouchableOpacity>
           </View>

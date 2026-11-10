@@ -25,13 +25,18 @@ import ChatBubble from '../../components/message/ChatBubble';
 import {useModeratedSend} from '../../lib/useModeratedSend';
 import {useQueryClient} from '@tanstack/react-query';
 import {useChatMessages} from '../../api/mutations/messages/useChatMessages';
+import {useSuggestReply} from '../../api/mutations/assistant/aiAssistantHooks';
+import type {NativeStackScreenProps} from '@react-navigation/native-stack';
+import type {RootStackParamList} from '../../../types/rootStackParamList';
 
 // ═══ HELPERS ═══
 const getChatRoom = (a: number, b: number) =>
   `chat_${Math.min(a, b)}_${Math.max(a, b)}`;
 
 // ═══ COMPONENT ═══
-const ChatScreen = ({route}) => {
+type Props = NativeStackScreenProps<RootStackParamList, 'Chat'>;
+
+const ChatScreen = ({route}: Props) => {
   const {userId, nickname} = route.params;
   const {user: authUser} = useAuth();
   const {theme} = useTheme();
@@ -49,13 +54,14 @@ const ChatScreen = ({route}) => {
 
   // ═══ QUERIES & MUTATIONS ═══
   const {data, fetchNextPage, hasNextPage, isLoading} = useChatMessages(
-    authUser?.id,
+    authUser?.id ?? 0,
     userId,
   );
   const sendMutation = useSendMessage();
   const editMutation = useEditMessage();
   const reportMutation = useReportMessage();
   const deleteMutation = useDeleteSingleMessage();
+  const suggestReplyMutation = useSuggestReply();
   const {socket} = useSocket();
 
   // ═══ DERIVED ═══
@@ -66,6 +72,22 @@ const ChatScreen = ({route}) => {
   const chatRoom = useMemo(
     () => (authUser?.id ? getChatRoom(authUser.id, userId) : ''),
     [authUser?.id, userId],
+  );
+  const latestIncomingMessage = useMemo(
+    () =>
+      messages
+        .filter(
+          (message: any) =>
+            message.from_id === userId &&
+            typeof message.content === 'string' &&
+            message.content.trim().length > 0,
+        )
+        .sort((a: any, b: any) => {
+          const aTime = new Date(a.created_at ?? a.createdAt ?? 0).getTime();
+          const bTime = new Date(b.created_at ?? b.createdAt ?? 0).getTime();
+          return bTime - aTime;
+        })[0],
+    [messages, userId],
   );
 
   // ═══ MODAL ═══
@@ -118,12 +140,12 @@ const ChatScreen = ({route}) => {
 
   // ═══ SEND / EDIT ═══
   const proceedToSend = useCallback(
-    (text: string) => {
+    (text: string, acceptModerationWarning = false) => {
       if (!authUser?.id) return;
 
       if (editingMessageId) {
         editMutation.mutate(
-          {messageId: editingMessageId, content: text},
+          {messageId: editingMessageId, content: text, acceptModerationWarning},
           {
             onSuccess: () => {
               setEditingMessageId(null);
@@ -141,7 +163,7 @@ const ChatScreen = ({route}) => {
       } else {
         const tempId = Date.now() + Math.random();
         sendMutation.mutate(
-          {senderId: authUser.id, receiverId: userId, content: text, tempId},
+          {senderId: authUser.id, receiverId: userId, content: text, tempId, acceptModerationWarning},
           {
             onSuccess: () => setInputText(''),
             onError: (e: any) =>
@@ -173,6 +195,47 @@ const ChatScreen = ({route}) => {
     if (!inputText.trim()) return;
     sendWithModeration(inputText);
   }, [inputText, sendWithModeration]);
+
+  // پیشنهاد پاسخ فقط متن را در کادر قرار می‌دهد؛ ارسال همچنان با تأیید کاربر
+  // و عبور از همان مسیر moderation موجود انجام می‌شود.
+  const handleSuggestReply = useCallback(() => {
+    if (!latestIncomingMessage?.content || editingMessageId) return;
+    suggestReplyMutation.mutate(
+      {
+        targetUserId: userId,
+        message: latestIncomingMessage.content,
+      },
+      {
+        onSuccess: (result: any) => {
+          const reply =
+            typeof result?.reply === 'string' ? result.reply.trim() : '';
+          if (!reply) {
+            showModal(
+              'اشتراک لازم است',
+              'برای استفاده از پیشنهاد پاسخ، اشتراک دستیار هوشمند باید فعال باشد.',
+              [{text: 'باشه', onPress: hideModal}],
+            );
+            return;
+          }
+          setInputText(reply);
+        },
+        onError: (error: any) =>
+          showModal(
+            'پیشنهاد پاسخ آماده نشد',
+            error?.response?.data?.message ||
+              'لطفاً کمی بعد دوباره تلاش کنید.',
+            [{text: 'باشه', onPress: hideModal}],
+          ),
+      },
+    );
+  }, [
+    latestIncomingMessage,
+    editingMessageId,
+    suggestReplyMutation,
+    userId,
+    showModal,
+    hideModal,
+  ]);
 
   // ═══ DELETE ═══
   const handleDelete = useCallback(
@@ -226,7 +289,7 @@ const ChatScreen = ({route}) => {
 
   // ═══ LONG PRESS ═══
   const handleLongPress = useCallback(
-    (messageId: number, content: string, isOwn: boolean, isRead: boolean) => {
+    (messageId: number, content: string, isOwn: boolean, _isRead: boolean) => {
       if (!isOwn) return;
       const msg = messages.find(
         (m: any) => m.id === messageId || m.tempId === messageId,
@@ -312,7 +375,7 @@ const ChatScreen = ({route}) => {
         renderItem={renderItem}
         keyExtractor={(item: any) => (item.id ?? item.tempId)?.toString()}
         inverted
-        onEndReached={hasNextPage ? () => fetchNextPage() : null}
+        onEndReached={hasNextPage ? () => { void fetchNextPage(); } : undefined}
         onEndReachedThreshold={0.5}
         refreshing={isLoading && !messages.length}
         onRefresh={() =>
@@ -321,7 +384,7 @@ const ChatScreen = ({route}) => {
           })
         }
         ListEmptyComponent={
-          isLoading ? null : (
+          isLoading ? <ActivityIndicator size="small" /> : (
             <GlobalText style={styles.empty}>گفتگویی وجود ندارد.</GlobalText>
           )
         }
@@ -341,6 +404,21 @@ const ChatScreen = ({route}) => {
             multiline
             textAlignVertical="center"
           />
+          <TouchableOpacity
+            onPress={handleSuggestReply}
+            style={styles.suggestBtn}
+            disabled={
+              !latestIncomingMessage ||
+              !!editingMessageId ||
+              checking ||
+              suggestReplyMutation.isPending
+            }>
+            {suggestReplyMutation.isPending ? (
+              <ActivityIndicator size="small" color="#4f46e5" />
+            ) : (
+              <GlobalText style={styles.suggestIcon}>✨</GlobalText>
+            )}
+          </TouchableOpacity>
           <TouchableOpacity
             onPress={handleSend}
             style={styles.sendBtn}
@@ -441,6 +519,16 @@ const getStyles = (theme: any) =>
       textAlign: 'right',
       marginLeft: 8,
     },
+    suggestBtn: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      backgroundColor: '#e0e7ff',
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginLeft: 6,
+    },
+    suggestIcon: {fontSize: 20, color: '#4338ca'},
     sendBtn: {
       width: 44,
       height: 44,

@@ -3,7 +3,14 @@ import {Modal, View, Button, StyleSheet, TextInput} from 'react-native';
 import {useTheme} from '../../context/MainContext';
 import GlobalText from '../GlobalText';
 
-const FilterModal = ({visible, onClose, onApply, currentFilters}) => {
+interface FilterModalProps {
+  visible: boolean;
+  onClose: () => void;
+  onApply: (filters: {city: string; minAge: string; maxAge: string}) => void;
+  currentFilters: {city?: string; minAge?: string; maxAge?: string};
+}
+
+const FilterModal: React.FC<FilterModalProps> = ({visible, onClose, onApply, currentFilters}) => {
   const [city, setCity] = useState(currentFilters.city || '');
   const [minAge, setMinAge] = useState(currentFilters.minAge || '');
   const [maxAge, setMaxAge] = useState(currentFilters.maxAge || '');

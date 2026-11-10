@@ -69,6 +69,13 @@ export const useSendMessage = () => {
 
 export const useSuggestReply = () =>
   useMutation({
-    mutationFn: ({convId, message}: {convId: number; message: string}) =>
-      api.fetchSuggestReply(convId, message),
+    mutationFn: ({
+      convId,
+      targetUserId,
+      message,
+    }: {
+      convId?: number;
+      targetUserId?: number;
+      message: string;
+    }) => api.fetchSuggestReply(convId, message, targetUserId),
   });

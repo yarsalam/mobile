@@ -14,20 +14,22 @@ export function usePersistedForm<T extends Record<string, any>>(
     ...formOptions, // 👈 اینطوری resolver, mode و ... هم پاس داده میشه
   });
 
+  const {reset} = form;
+
   useEffect(() => {
     const loadData = async () => {
       try {
         const saved = await AsyncStorage.getItem(key);
         if (saved) {
           const parsed = JSON.parse(saved);
-          form.reset(parsed);
+          reset(parsed);
         }
       } catch (error) {
         console.error('خطا در خواندن فرم ذخیره‌شده:', error);
       }
     };
     loadData();
-  }, [key]);
+  }, [key, reset]);
 
   const unsubscribeRef = useRef<ReturnType<typeof form.watch> | null>(null);
 

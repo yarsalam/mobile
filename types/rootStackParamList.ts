@@ -36,10 +36,11 @@ export type RootStackParamList = {
   FaceVerification: undefined;
   AccountActions: undefined;
   Notifications: undefined;
-  PaymentMethod: undefined;
+  PaymentMethod: {productId: string};
   Deposit: {
-    bundleCode: string;
-    requiredCents: number;
+    /** Integer Iranian rials, matching ProductBundle.price in the API. */
+    amountRials: number;
     productLabel: string;
+    bundleCode?: string;
   };
 };

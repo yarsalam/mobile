@@ -46,7 +46,7 @@ export const ImageProvider = ({children}: {children: React.ReactNode}) => {
   });
 
   const images = fetchedData?.images ?? [];
-  const mainImage = images.find(img => img.isMain === true);
+  const mainImage = images.find((img: Image) => img.isMain === true);
 
   const uploadImage = useMutation({
     mutationFn: uploadImageApi,

@@ -26,8 +26,12 @@ export const fetchIcebreakers = (targetUserId: number) =>
     method: 'POST',
     body: JSON.stringify({targetUserId}),
   });
-export const fetchSuggestReply = (convId: number, message: string) =>
+export const fetchSuggestReply = (
+  convId: number | undefined,
+  message: string,
+  targetUserId?: number,
+) =>
   fetchWithAuth(`${BASE}/suggest-reply`, {
     method: 'POST',
-    body: JSON.stringify({convId, message}),
+    body: JSON.stringify({convId, targetUserId, message}),
   });

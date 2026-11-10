@@ -2,6 +2,8 @@ import React from 'react';
 import {View, Text, TouchableOpacity, Image, StyleSheet} from 'react-native';
 import {GroupedMessageDto} from '../../types/messageType';
 import {useNavigation} from '@react-navigation/native';
+import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
+import type {RootStackParamList} from '../../types/rootStackParamList';
 import {useToast} from '../context/ToastContext';
 import GlobalText from './GlobalText';
 import {API_BASE_URL} from '../config/api';
@@ -29,7 +31,7 @@ const MessageItem: React.FC<Props> = ({data}) => {
     unreadPaidMessagesCount,
   } = data;
 
-  const navigation = useNavigation();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const {showToast} = useToast();
 
   const handlePress = () => {
@@ -40,7 +42,7 @@ const MessageItem: React.FC<Props> = ({data}) => {
     if (blockedMe) return showToast('کاربر شما را مسدود کرده است.', 'error');
 
     // رفتن به صفحه چت
-    navigation.navigate(isFree ? 'FreeChat' : 'PaidChat', { userId: data.userId });
+    navigation.navigate('Chat', {userId: data.userId, nickname: name});
   };
 
   const time = isFree ? lastFreeMessageTime : lastPaidMessageTime;
