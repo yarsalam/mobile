@@ -46,11 +46,11 @@ export async function buyWithWallet({
     await AsyncStorage.removeItem(storageKey);
     return result;
   } catch (error) {
-    const status = (error as {status?: number})?.status;
-    // A client/business rejection did not complete this checkout. Clear the
-    // key so a corrected/new attempt can start cleanly. Keep it for network
-    // errors and server failures because the server may have committed work.
-    if (typeof status === 'number' && status >= 400 && status < 500) {
+    const code = (error as {code?: string})?.code;
+    // Only this explicit backend code is emitted before any wallet debit.
+    // A generic 4xx may come from bundle fulfillment after the debit committed,
+    // so retain the same key unless the response proves no debit took place.
+    if (code === 'INSUFFICIENT_BALANCE') {
       await AsyncStorage.removeItem(storageKey);
     }
     throw error;
