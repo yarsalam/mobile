@@ -70,13 +70,12 @@ export function buyWithWallet(input: WalletPurchaseInput) {
 
   const request = performWalletPurchase(input);
   inFlightWalletCheckouts.set(storageKey, request);
-  void request
-    .finally(() => {
-      if (inFlightWalletCheckouts.get(storageKey) === request) {
-        inFlightWalletCheckouts.delete(storageKey);
-      }
-    })
-    .catch(() => undefined);
+  const clearInFlight = () => {
+    if (inFlightWalletCheckouts.get(storageKey) === request) {
+      inFlightWalletCheckouts.delete(storageKey);
+    }
+  };
+  request.then(clearInFlight, clearInFlight);
 
   return request;
 }
