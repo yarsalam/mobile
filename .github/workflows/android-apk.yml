@@ -193,7 +193,7 @@ jobs:
           PY
 
       - name: Lint wallet checkout changes (blocking)
-        run: npx eslint src/api/mutations/payment/useBuyWithWallet.ts src/api/mutations/payment/useBuyWithWallet.test.ts src/api/queries/aiAssistant.ts src/api/queries/aiAssistant.test.ts src/api/mutations/assistant/aiAssistantHooks.ts src/components/products/ProductCard.tsx src/components/BasketScreen.tsx src/pages/payment/Basket.tsx types/rootStackParamList.ts src/pages/messages/ChatScreen.tsx src/lib/useModeratedSend.ts src/lib/moderationDecision.ts src/lib/moderationDecision.test.ts src/api/queries/messages.ts src/api/queries/messages.test.ts src/api/mutations/messages/useSendMessage.ts src/api/mutations/useModerationCheck.ts src/api/mutations/personality/useTextPersonality.ts src/api/mutations/personality/useTextPersonality.test.ts src/components/personality/TextPersonalityAnalysisCard.tsx src/pages/assistant/AiAdvice.tsx src/pages/AccountActionsScreen.tsx
+        run: npx eslint src/api/mutations/payment/useBuyWithWallet.ts src/api/mutations/payment/useBuyWithWallet.test.ts src/api/queries/aiAssistant.ts src/api/queries/aiAssistant.test.ts src/api/mutations/assistant/aiAssistantHooks.ts src/components/products/ProductCard.tsx src/components/BasketScreen.tsx src/pages/payment/Basket.tsx types/rootStackParamList.ts src/pages/messages/ChatScreen.tsx src/lib/useModeratedSend.ts src/lib/moderationDecision.ts src/lib/moderationDecision.test.ts src/lib/requestReplySuggestionConsent.ts src/lib/requestReplySuggestionConsent.test.ts src/api/queries/messages.ts src/api/queries/messages.test.ts src/api/mutations/messages/useSendMessage.ts src/api/mutations/useModerationCheck.ts src/api/mutations/personality/useTextPersonality.ts src/api/mutations/personality/useTextPersonality.test.ts src/components/personality/TextPersonalityAnalysisCard.tsx src/pages/assistant/AiAdvice.tsx src/pages/AccountActionsScreen.tsx
 
       - name: Audit repository-wide lint baseline (non-blocking)
         run: npm run lint
@@ -203,7 +203,7 @@ jobs:
         run: npx tsc --noEmit
 
       - name: Run wallet checkout Jest tests (blocking)
-        run: npm test -- --runInBand src/api/mutations/payment/useBuyWithWallet.test.ts src/api/mutations/personality/useTextPersonality.test.ts src/api/queries/aiAssistant.test.ts src/lib/moderationDecision.test.ts src/api/queries/messages.test.ts
+        run: npm test -- --runInBand src/api/mutations/payment/useBuyWithWallet.test.ts src/api/mutations/personality/useTextPersonality.test.ts src/api/queries/aiAssistant.test.ts src/lib/moderationDecision.test.ts src/lib/requestReplySuggestionConsent.test.ts src/api/queries/messages.test.ts
 
       - name: Run full Jest suite (blocking)
         run: npm test -- --runInBand --passWithNoTests
