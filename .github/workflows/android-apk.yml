@@ -195,6 +195,9 @@ jobs:
       - name: Lint wallet checkout changes (blocking)
         run: npx eslint src/api/mutations/payment/useBuyWithWallet.ts src/api/mutations/payment/useBuyWithWallet.test.ts src/api/queries/aiAssistant.ts src/api/queries/aiAssistant.test.ts src/api/mutations/assistant/aiAssistantHooks.ts src/components/products/ProductCard.tsx src/components/BasketScreen.tsx src/pages/payment/Basket.tsx types/rootStackParamList.ts src/pages/messages/ChatScreen.tsx src/lib/useModeratedSend.ts src/lib/moderationDecision.ts src/lib/moderationDecision.test.ts src/lib/requestReplySuggestionConsent.ts src/lib/requestReplySuggestionConsent.test.ts src/api/queries/messages.ts src/api/queries/messages.test.ts src/api/mutations/messages/useSendMessage.ts src/api/mutations/useModerationCheck.ts src/api/mutations/personality/useTextPersonality.ts src/api/mutations/personality/useTextPersonality.test.ts src/components/personality/TextPersonalityAnalysisCard.tsx src/pages/assistant/AiAdvice.tsx src/pages/AccountActionsScreen.tsx
 
+      - name: Lint promotion exposure and wallet attribution changes (blocking)
+        run: npx eslint src/api/intractions/queries/intractionsApi.ts src/api/intractions/queries/intractionsApi.test.ts src/api/intractions/mutations/intractionsMutation.ts src/components/user/FeedSlider.tsx src/components/PromotionCard.tsx src/pages/Products.tsx src/components/products/ProductCard.tsx src/api/mutations/payment/useBuyWithWallet.ts src/api/mutations/payment/useBuyWithWallet.test.ts types/feed.types.ts types/rootStackParamList.ts
+
       - name: Audit repository-wide lint baseline (non-blocking)
         run: npm run lint
         continue-on-error: true
@@ -202,8 +205,8 @@ jobs:
       - name: Type-check the React Native application (blocking)
         run: npx tsc --noEmit
 
-      - name: Run wallet checkout Jest tests (blocking)
-        run: npm test -- --runInBand src/api/mutations/payment/useBuyWithWallet.test.ts src/api/mutations/personality/useTextPersonality.test.ts src/api/queries/aiAssistant.test.ts src/lib/moderationDecision.test.ts src/lib/requestReplySuggestionConsent.test.ts src/api/queries/messages.test.ts
+      - name: Run wallet checkout and promotion exposure Jest tests (blocking)
+        run: npm test -- --runInBand src/api/intractions/queries/intractionsApi.test.ts src/api/mutations/payment/useBuyWithWallet.test.ts src/api/mutations/personality/useTextPersonality.test.ts src/api/queries/aiAssistant.test.ts src/lib/moderationDecision.test.ts src/lib/requestReplySuggestionConsent.test.ts src/api/queries/messages.test.ts
 
       - name: Run full Jest suite (blocking)
         run: npm test -- --runInBand --passWithNoTests
