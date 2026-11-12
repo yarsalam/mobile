@@ -1,5 +1,10 @@
 import {useQuery} from '@tanstack/react-query';
-import {getFeed, dismissPromotion} from '../queries/intractionsApi';
+import {
+  getFeed,
+  trackPromotionImpression,
+  trackPromotionClick,
+  dismissPromotion,
+} from '../queries/intractionsApi';
 import {useLikeMutation} from './useLikeMutation';
 import {useSuperLikeMutation} from './useSuperLikeMutation';
 import {usePassMutation} from './usePassMutation';
@@ -31,6 +36,14 @@ export const useFeed = (limit: number = 20) => {
   const superLikeMutation = useSuperLikeMutation();
   const passMutation = usePassMutation(userId => removeFromFeed(userId));
 
+  const impressionMutation = useMutation({
+    mutationFn: trackPromotionImpression,
+    retry: 2,
+  });
+  const clickMutation = useMutation({
+    mutationFn: trackPromotionClick,
+    retry: 1,
+  });
   const dismissMutation = useMutation({
     mutationFn: dismissPromotion,
     onSuccess: (_, promotionId) => {
@@ -49,8 +62,12 @@ export const useFeed = (limit: number = 20) => {
     handleLike: (userId: number) => likeMutation.mutate(userId),
     handleSuperLike: (userId: number) => superLikeMutation.mutate(userId),
     handlePass: (userId: number) => passMutation.mutate(userId),
+    handlePromotionImpression: (promotionId: string) =>
+      impressionMutation.mutateAsync(promotionId),
+    handlePromotionClick: (promotionId: string) =>
+      clickMutation.mutateAsync(promotionId),
     handleDismissPromotion: (promotionId: string) =>
-      dismissMutation.mutate(promotionId),
+      dismissMutation.mutateAsync(promotionId),
     isLiking: likeMutation.isPending,
     isSuperLiking: superLikeMutation.isPending,
   };
