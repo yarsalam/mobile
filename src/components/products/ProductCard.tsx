@@ -95,6 +95,7 @@ export default function ProductCard({
       await buyMutation.mutateAsync({
         bundleCode: String(selected.id),
         userId: Number(user.id),
+        ...(matchesPromotion(selected) ? {promotionId} : {}),
       });
       Alert.alert('✅ موفق', `${title} با موفقیت فعال شد!`);
     } catch (err: any) {
