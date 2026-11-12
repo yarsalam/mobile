@@ -15,7 +15,7 @@ export interface FeedUser {
 }
 
 export interface PromotionConfig {
-  variant: 'boost' | 'vip' | 'credit' | 'profile';
+  variant: 'boost' | 'vip' | 'credit' | 'profile' | 'bundle';
   title: string;
   subtitle: string;
   ctaText: string;
@@ -32,6 +32,7 @@ export interface FeedItem {
   type: FeedItemType;
   data: FeedUser | PromotionConfig;
   priority?: number;
+  score?: number;
   expiresAt?: string;
 }
 
