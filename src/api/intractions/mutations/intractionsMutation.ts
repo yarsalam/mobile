@@ -1,3 +1,4 @@
+import {useCallback} from 'react';
 import {useQuery} from '@tanstack/react-query';
 import {
   getFeed,
@@ -53,6 +54,19 @@ export const useFeed = (limit: number = 20) => {
     },
   });
 
+  const handlePromotionImpression = useCallback(
+    (promotionId: string) => impressionMutation.mutateAsync(promotionId),
+    [impressionMutation.mutateAsync],
+  );
+  const handlePromotionClick = useCallback(
+    (promotionId: string) => clickMutation.mutateAsync(promotionId),
+    [clickMutation.mutateAsync],
+  );
+  const handleDismissPromotion = useCallback(
+    (promotionId: string) => dismissMutation.mutateAsync(promotionId),
+    [dismissMutation.mutateAsync],
+  );
+
   return {
     feed,
     isLoading,
@@ -62,12 +76,9 @@ export const useFeed = (limit: number = 20) => {
     handleLike: (userId: number) => likeMutation.mutate(userId),
     handleSuperLike: (userId: number) => superLikeMutation.mutate(userId),
     handlePass: (userId: number) => passMutation.mutate(userId),
-    handlePromotionImpression: (promotionId: string) =>
-      impressionMutation.mutateAsync(promotionId),
-    handlePromotionClick: (promotionId: string) =>
-      clickMutation.mutateAsync(promotionId),
-    handleDismissPromotion: (promotionId: string) =>
-      dismissMutation.mutateAsync(promotionId),
+    handlePromotionImpression,
+    handlePromotionClick,
+    handleDismissPromotion,
     isLiking: likeMutation.isPending,
     isSuperLiking: superLikeMutation.isPending,
   };
