@@ -5,7 +5,7 @@ import GlobalText from './GlobalText';
 import {CARD_HEIGHT, CARD_WIDTH} from './user/UserCard';
 
 interface PromotionData {
-  variant: 'boost' | 'vip' | 'credit' | string;
+  variant: 'boost' | 'vip' | 'credit' | 'profile' | 'bundle' | string;
   title: string;
   subtitle: string;
   ctaText: string;
@@ -16,9 +16,14 @@ interface PromotionData {
 interface PromotionCardProps {
   data: PromotionData;
   onPress: () => void;
+  onDismiss: () => void;
 }
 
-const PromotionCard: React.FC<PromotionCardProps> = ({data, onPress}) => {
+const PromotionCard: React.FC<PromotionCardProps> = ({
+  data,
+  onPress,
+  onDismiss,
+}) => {
   const {variant, title, subtitle, ctaText, ctaColor, gradientColors} = data;
 
   const getIcon = () => {
@@ -41,11 +46,22 @@ const PromotionCard: React.FC<PromotionCardProps> = ({data, onPress}) => {
         start={{x: 0, y: 0}}
         end={{x: 1, y: 1}}
         style={styles.card}>
+        <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityLabel="بستن پیشنهاد"
+          onPress={onDismiss}
+          hitSlop={10}
+          style={styles.dismiss}>
+          <GlobalText style={styles.dismissText}>×</GlobalText>
+        </TouchableOpacity>
         <GlobalText style={styles.icon}>{getIcon()}</GlobalText>
         <GlobalText style={styles.title}>{title}</GlobalText>
         <GlobalText style={styles.subtitle}>{subtitle}</GlobalText>
 
-        <TouchableOpacity style={[styles.cta, {backgroundColor: ctaColor}]}>
+        <TouchableOpacity
+          onPress={onPress}
+          accessibilityRole="button"
+          style={[styles.cta, {backgroundColor: ctaColor}]}>
           <GlobalText style={styles.ctaText}>{ctaText}</GlobalText>
         </TouchableOpacity>
       </LinearGradient>
@@ -77,6 +93,19 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 24,
   },
+  dismiss: {
+    position: 'absolute',
+    top: 10,
+    right: 12,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.22)',
+    zIndex: 2,
+  },
+  dismissText: {color: '#fff', fontSize: 24, lineHeight: 26},
   cta: {paddingHorizontal: 30, paddingVertical: 14, borderRadius: 25},
   ctaText: {color: '#fff', fontWeight: 'bold', fontSize: 16},
 });
