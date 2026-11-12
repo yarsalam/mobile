@@ -1,4 +1,4 @@
-import React, {useEffect, useRef} from 'react';
+import React, {useCallback, useEffect, useRef} from 'react';
 import {View, ScrollView, Dimensions, StyleSheet} from 'react-native';
 import UserCard, {CARD_WIDTH} from './UserCard';
 import PromotionCard from '../PromotionCard';
@@ -16,15 +16,95 @@ const AUTO_SLIDE_INTERVAL = 6500;
 
 const FeedSlider = () => {
   const scrollRef = useRef<React.ElementRef<typeof ScrollView>>(null);
-  const {feed, isLoading, handleLike, handleSuperLike, handlePass} =
-    useFeed(30);
+  const {
+    feed,
+    isLoading,
+    handleLike,
+    handleSuperLike,
+    handlePass,
+    handlePromotionImpression,
+    handlePromotionClick,
+    handleDismissPromotion,
+  } = useFeed(30);
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
-  // ── اسلاید خودکار ──
   const currentIndexRef = useRef(0);
   const isInteractingRef = useRef(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Keep the in-flight/successful promise so repeated scroll events do not
+  // create duplicate requests. The Backend also enforces idempotency.
+  const impressionRequestsRef = useRef(new Map<string, Promise<unknown>>());
+
+  const ensurePromotionImpression = useCallback((promotionId: string) => {
+    const current = impressionRequestsRef.current.get(promotionId);
+    if (current) return current;
+
+    const request = handlePromotionImpression(promotionId).catch(error => {
+      impressionRequestsRef.current.delete(promotionId);
+      throw error;
+    });
+    impressionRequestsRef.current.set(promotionId, request);
+    return request;
+  }, [handlePromotionImpression]);
+
+  const recordVisiblePromotion = useCallback((index: number) => {
+    const item = feed[index];
+    if (item?.type !== 'promotion' || !item.id) return;
+    ensurePromotionImpression(String(item.id)).catch(error => {
+      if (__DEV__) {
+        console.warn('[FeedSlider] promotion impression failed', error);
+      }
+    });
+  }, [feed, ensurePromotionImpression]);
+
+  const getVisibleIndex = useCallback(
+    (offsetX: number) =>
+      Math.max(0, Math.min(feed.length - 1, Math.round(offsetX / SNAP))),
+    [feed.length],
+  );
+
+  const handleScroll = useCallback((event: any) => {
+    const index = getVisibleIndex(event.nativeEvent.contentOffset.x);
+    currentIndexRef.current = index;
+    recordVisiblePromotion(index);
+  }, [getVisibleIndex, recordVisiblePromotion]);
+
+  const handlePromotionPress = async (item: any) => {
+    const promotionId = String(item.id);
+    try {
+      // The Backend rejects click events until the real impression is stored.
+      await ensurePromotionImpression(promotionId);
+      await handlePromotionClick(promotionId);
+    } catch (error) {
+      if (__DEV__) {
+        console.warn('[FeedSlider] promotion click tracking failed', error);
+      }
+    }
+
+    if (item.data?.variant === 'profile') {
+      navigation.navigate('EditUserProfile');
+      return;
+    }
+
+    // "Payment" and "EditProfile" were not registered stack routes. Use the
+    // real product catalog and carry the exposure ID into the wallet checkout.
+    navigation.navigate('Products', {
+      promotionId,
+      promotionVariant: item.data?.variant,
+    });
+  };
+
+  const handlePromotionDismiss = async (promotionId: string) => {
+    try {
+      await ensurePromotionImpression(promotionId);
+      await handleDismissPromotion(promotionId);
+    } catch (error) {
+      if (__DEV__) {
+        console.warn('[FeedSlider] promotion dismiss failed', error);
+      }
+    }
+  };
 
   const stopAutoSlide = () => {
     if (timerRef.current) {
@@ -42,7 +122,6 @@ const FeedSlider = () => {
 
       const nextIndex = (currentIndexRef.current + 1) % feed.length;
       currentIndexRef.current = nextIndex;
-
       scrollRef.current?.scrollTo({
         x: nextIndex * SNAP,
         animated: true,
@@ -52,23 +131,28 @@ const FeedSlider = () => {
     return stopAutoSlide;
   }, [feed.length]);
 
+  useEffect(() => {
+    if (!feed.length) {
+      currentIndexRef.current = 0;
+      return;
+    }
+    const index = Math.max(
+      0,
+      Math.min(feed.length - 1, currentIndexRef.current),
+    );
+    currentIndexRef.current = index;
+    recordVisiblePromotion(index);
+  }, [feed, recordVisiblePromotion]);
+
   const handleScrollBeginDrag = () => {
     isInteractingRef.current = true;
   };
 
-  const handleMomentumScrollEnd = (e: any) => {
-    const newIndex = Math.round(e.nativeEvent.contentOffset.x / SNAP);
+  const handleMomentumScrollEnd = (event: any) => {
+    const newIndex = getVisibleIndex(event.nativeEvent.contentOffset.x);
     currentIndexRef.current = newIndex;
     isInteractingRef.current = false;
-  };
-  // ────────────────────
-
-  const handlePromotionPress = (item: any) => {
-    const navigationTarget = item.data.navigationTarget || 'Products';
-    const navigationParams = item.data.navigationParams || {
-      type: item.data.variant,
-    };
-    navigation.navigate(navigationTarget as any, navigationParams);
+    recordVisiblePromotion(newIndex);
   };
 
   const likeButtonRef = useRef(null);
@@ -102,11 +186,14 @@ const FeedSlider = () => {
           snapToInterval={SNAP}
           decelerationRate="fast"
           snapToAlignment="center"
+          scrollEventThrottle={100}
+          onLayout={() => recordVisiblePromotion(currentIndexRef.current)}
+          onScroll={handleScroll}
           onScrollBeginDrag={handleScrollBeginDrag}
           onMomentumScrollEnd={handleMomentumScrollEnd}
           contentContainerStyle={{
             flexDirection: 'row',
-            paddingHorizontal: (width - (CARD_WIDTH+30)) / 2 - CARD_MARGIN,
+            paddingHorizontal: (width - (CARD_WIDTH + 30)) / 2 - CARD_MARGIN,
           }}>
           {feed.map((item: any) =>
             item.type === 'user' ? (
@@ -128,7 +215,8 @@ const FeedSlider = () => {
               <PromotionCard
                 key={String(item.id)}
                 data={item.data}
-                onPress={() => handlePromotionPress(item)}
+                onPress={() => void handlePromotionPress(item)}
+                onDismiss={() => void handlePromotionDismiss(String(item.id))}
               />
             ),
           )}
