@@ -54,17 +54,23 @@ export const useFeed = (limit: number = 20) => {
     },
   });
 
+  // Keep the mutation methods, not the observer result objects, in callback
+  // closures. TanStack Query may return a new result object on each render.
+  const recordImpression = impressionMutation.mutateAsync;
+  const recordClick = clickMutation.mutateAsync;
+  const recordDismissal = dismissMutation.mutateAsync;
+
   const handlePromotionImpression = useCallback(
-    (promotionId: string) => impressionMutation.mutateAsync(promotionId),
-    [impressionMutation.mutateAsync],
+    (promotionId: string) => recordImpression(promotionId),
+    [recordImpression],
   );
   const handlePromotionClick = useCallback(
-    (promotionId: string) => clickMutation.mutateAsync(promotionId),
-    [clickMutation.mutateAsync],
+    (promotionId: string) => recordClick(promotionId),
+    [recordClick],
   );
   const handleDismissPromotion = useCallback(
-    (promotionId: string) => dismissMutation.mutateAsync(promotionId),
-    [dismissMutation.mutateAsync],
+    (promotionId: string) => recordDismissal(promotionId),
+    [recordDismissal],
   );
 
   return {
