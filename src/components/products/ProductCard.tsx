@@ -16,6 +16,8 @@ interface Props {
   description: string;
   icon: string;
   options: ProductOption[];
+  promotionId?: string;
+  promotionVariant?: 'boost' | 'vip' | 'credit' | 'profile' | 'bundle';
 }
 
 export default function ProductCard({
@@ -23,6 +25,8 @@ export default function ProductCard({
   description,
   icon,
   options,
+  promotionId,
+  promotionVariant,
 }: Props) {
   const {theme} = useTheme();
   const styles = getStyles(theme);
@@ -37,6 +41,29 @@ export default function ProductCard({
   const walletBalance = Number(wallet?.balance ?? 0); // ریال
   const selectedPrice = selected?.price ?? 0; // ریال
   const canAfford = walletBalance >= selectedPrice;
+
+  const matchesPromotion = (option: ProductOption | null) => {
+    if (!promotionId || !promotionVariant || !option) return false;
+    const meta = option.meta ?? {};
+    switch (promotionVariant) {
+      case 'boost':
+        return Number(meta.boostCount ?? 0) > 0;
+      case 'credit':
+        return Number(meta.creditsAmount ?? 0) > 0;
+      case 'vip':
+        return Number(meta.vipDays ?? 0) > 0;
+      case 'bundle':
+        // The current API exposes mixed bundles in their primary category.
+        // Attribute this template only to the advertised 20-credit + 2-boost
+        // contents, not to an unrelated item in the same product list.
+        return (
+          Number(meta.creditsAmount ?? 0) >= 20 &&
+          Number(meta.boostCount ?? 0) >= 2
+        );
+      default:
+        return false;
+    }
+  };
 
   const handleBuy = () => {
     if (!selected) return;
