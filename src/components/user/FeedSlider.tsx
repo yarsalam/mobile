@@ -1,4 +1,4 @@
-import React, {useEffect, useRef} from 'react';
+import React, {useCallback, useEffect, useRef} from 'react';
 import {View, ScrollView, Dimensions, StyleSheet} from 'react-native';
 import UserCard, {CARD_WIDTH} from './UserCard';
 import PromotionCard from '../PromotionCard';
@@ -36,7 +36,7 @@ const FeedSlider = () => {
   // create duplicate requests. The Backend also enforces idempotency.
   const impressionRequestsRef = useRef(new Map<string, Promise<unknown>>());
 
-  const ensurePromotionImpression = (promotionId: string) => {
+  const ensurePromotionImpression = useCallback((promotionId: string) => {
     const current = impressionRequestsRef.current.get(promotionId);
     if (current) return current;
 
@@ -46,26 +46,29 @@ const FeedSlider = () => {
     });
     impressionRequestsRef.current.set(promotionId, request);
     return request;
-  };
+  }, [handlePromotionImpression]);
 
-  const recordVisiblePromotion = (index: number) => {
+  const recordVisiblePromotion = useCallback((index: number) => {
     const item = feed[index];
     if (item?.type !== 'promotion' || !item.id) return;
-    void ensurePromotionImpression(String(item.id)).catch(error => {
+    ensurePromotionImpression(String(item.id)).catch(error => {
       if (__DEV__) {
         console.warn('[FeedSlider] promotion impression failed', error);
       }
     });
-  };
+  }, [feed, ensurePromotionImpression]);
 
-  const getVisibleIndex = (offsetX: number) =>
-    Math.max(0, Math.min(feed.length - 1, Math.round(offsetX / SNAP)));
+  const getVisibleIndex = useCallback(
+    (offsetX: number) =>
+      Math.max(0, Math.min(feed.length - 1, Math.round(offsetX / SNAP))),
+    [feed.length],
+  );
 
-  const handleScroll = (event: any) => {
+  const handleScroll = useCallback((event: any) => {
     const index = getVisibleIndex(event.nativeEvent.contentOffset.x);
     currentIndexRef.current = index;
     recordVisiblePromotion(index);
-  };
+  }, [getVisibleIndex, recordVisiblePromotion]);
 
   const handlePromotionPress = async (item: any) => {
     const promotionId = String(item.id);
@@ -139,7 +142,7 @@ const FeedSlider = () => {
     );
     currentIndexRef.current = index;
     recordVisiblePromotion(index);
-  }, [feed]);
+  }, [feed, recordVisiblePromotion]);
 
   const handleScrollBeginDrag = () => {
     isInteractingRef.current = true;
