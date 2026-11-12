@@ -7,7 +7,13 @@ export type RootStackParamList = {
   TelegramActivation: undefined;
   WhatsAppActivation: undefined;
   Welcome: undefined;
-  Products: undefined;
+  Products:
+    | {
+        /** FeedItem.id for the promotion that opened the product catalog. */
+        promotionId?: string;
+        promotionVariant?: 'boost' | 'vip' | 'credit' | 'profile' | 'bundle';
+      }
+    | undefined;
   multiStepProfile: undefined;
   UserPanel: undefined;
   EditImg: undefined;
