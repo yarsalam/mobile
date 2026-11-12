@@ -1,5 +1,5 @@
 import React from 'react';
-import {TouchableOpacity, StyleSheet} from 'react-native';
+import {View, TouchableOpacity, StyleSheet} from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import GlobalText from './GlobalText';
 import {CARD_HEIGHT, CARD_WIDTH} from './user/UserCard';
@@ -34,42 +34,53 @@ const PromotionCard: React.FC<PromotionCardProps> = ({
         return '👑';
       case 'credit':
         return '💰';
+      case 'bundle':
+        return '🎁';
       default:
         return '✨';
     }
   };
 
   return (
-    <TouchableOpacity onPress={onPress} activeOpacity={0.9}>
-      <LinearGradient
-        colors={gradientColors}
-        start={{x: 0, y: 0}}
-        end={{x: 1, y: 1}}
-        style={styles.card}>
-        <TouchableOpacity
-          accessibilityRole="button"
-          accessibilityLabel="بستن پیشنهاد"
-          onPress={onDismiss}
-          hitSlop={10}
-          style={styles.dismiss}>
-          <GlobalText style={styles.dismissText}>×</GlobalText>
-        </TouchableOpacity>
-        <GlobalText style={styles.icon}>{getIcon()}</GlobalText>
-        <GlobalText style={styles.title}>{title}</GlobalText>
-        <GlobalText style={styles.subtitle}>{subtitle}</GlobalText>
+    <View style={styles.wrapper}>
+      <TouchableOpacity
+        onPress={onPress}
+        activeOpacity={0.9}
+        accessibilityRole="button"
+        accessibilityLabel={ctaText}>
+        <LinearGradient
+          colors={gradientColors}
+          start={{x: 0, y: 0}}
+          end={{x: 1, y: 1}}
+          style={styles.card}>
+          <GlobalText style={styles.icon}>{getIcon()}</GlobalText>
+          <GlobalText style={styles.title}>{title}</GlobalText>
+          <GlobalText style={styles.subtitle}>{subtitle}</GlobalText>
 
-        <TouchableOpacity
-          onPress={onPress}
-          accessibilityRole="button"
-          style={[styles.cta, {backgroundColor: ctaColor}]}>
-          <GlobalText style={styles.ctaText}>{ctaText}</GlobalText>
-        </TouchableOpacity>
-      </LinearGradient>
-    </TouchableOpacity>
+          <View style={[styles.cta, {backgroundColor: ctaColor}]}>
+            <GlobalText style={styles.ctaText}>{ctaText}</GlobalText>
+          </View>
+        </LinearGradient>
+      </TouchableOpacity>
+      <TouchableOpacity
+        accessibilityRole="button"
+        accessibilityLabel="بستن پیشنهاد"
+        onPress={onDismiss}
+        hitSlop={10}
+        style={styles.dismiss}>
+        <GlobalText style={styles.dismissText}>×</GlobalText>
+      </TouchableOpacity>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  wrapper: {
+    width: CARD_WIDTH,
+    height: CARD_HEIGHT,
+    marginHorizontal: 8,
+    position: 'relative',
+  },
   card: {
     width: CARD_WIDTH,
     height: CARD_HEIGHT,
@@ -77,7 +88,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
-    marginHorizontal: 8,
   },
   icon: {fontSize: 48, marginBottom: 16},
   title: {
@@ -96,7 +106,7 @@ const styles = StyleSheet.create({
   dismiss: {
     position: 'absolute',
     top: 10,
-    right: 12,
+    right: 10,
     width: 32,
     height: 32,
     borderRadius: 16,
