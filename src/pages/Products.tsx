@@ -1,6 +1,7 @@
 import React from 'react';
 import {ScrollView} from 'react-native';
-import {RouteProp, useRoute} from '@react-navigation/native';
+import {useRoute} from '@react-navigation/native';
+import type {RouteProp} from '@react-navigation/native';
 import type {RootStackParamList} from '../../types/rootStackParamList';
 import { usePublicProducts } from '../api/mutations/product/useProducts';
 import MainLayout from '../theme/MainLayout';
