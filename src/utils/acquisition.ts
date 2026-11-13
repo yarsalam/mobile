@@ -1,5 +1,6 @@
 import {Platform, Linking} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import {fetchWithAuth} from '../lib/fetchWithAuth';
 
 export interface AcquisitionTouch {
   source: string;
@@ -99,12 +100,24 @@ function touchFromUrl(rawUrl: string): AcquisitionTouch | null {
   }
 }
 
+async function syncTouchToServer(touch: AcquisitionTouch) {
+  try {
+    await fetchWithAuth('/auth/acquisition-touch', {
+      method: 'POST',
+      body: JSON.stringify({lastTouch: touch}),
+    });
+  } catch {
+    // No auth token or network must never block app navigation.
+  }
+}
+
 async function storeTouch(touch: AcquisitionTouch) {
   const [firstRaw] = await Promise.all([AsyncStorage.getItem(FIRST_TOUCH_KEY)]);
   if (!firstRaw) {
     await AsyncStorage.setItem(FIRST_TOUCH_KEY, JSON.stringify(touch));
   }
   await AsyncStorage.setItem(LAST_TOUCH_KEY, JSON.stringify(touch));
+  await syncTouchToServer(touch);
 }
 
 async function captureInitialUrl() {
@@ -116,6 +129,7 @@ async function captureInitialUrl() {
   if (touch) {
     if (!firstRaw) await AsyncStorage.setItem(FIRST_TOUCH_KEY, JSON.stringify(touch));
     await AsyncStorage.setItem(LAST_TOUCH_KEY, JSON.stringify(touch));
+    await syncTouchToServer(touch);
     return;
   }
 
