@@ -2,9 +2,24 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {Linking} from 'react-native';
 import {getAcquisitionData} from './acquisition';
 
-jest.mock('@react-native-async-storage/async-storage', () =>
-  require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
-);
+jest.mock('@react-native-async-storage/async-storage', () => {
+  const values = new Map<string, string>();
+  return {
+    __esModule: true,
+    default: {
+      getItem: jest.fn(async (key: string) => values.get(key) ?? null),
+      setItem: jest.fn(async (key: string, value: string) => {
+        values.set(key, value);
+      }),
+      removeItem: jest.fn(async (key: string) => {
+        values.delete(key);
+      }),
+      clear: jest.fn(async () => {
+        values.clear();
+      }),
+    },
+  };
+});
 
 describe('acquisition touch capture', () => {
   beforeEach(async () => {
