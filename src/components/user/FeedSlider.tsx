@@ -16,8 +16,15 @@ const AUTO_SLIDE_INTERVAL = 6500;
 
 const FeedSlider = () => {
   const scrollRef = useRef<React.ElementRef<typeof ScrollView>>(null);
-  const {feed, isLoading, handleLike, handleSuperLike, handlePass} =
-    useFeed(30);
+  const {
+    feed,
+    isLoading,
+    handleLike,
+    handleSuperLike,
+    handlePass,
+    handleDismissPromotion,
+    handlePromotionClick,
+  } = useFeed(30);
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
@@ -63,7 +70,15 @@ const FeedSlider = () => {
   };
   // ────────────────────
 
-  const handlePromotionPress = (item: any) => {
+  const handlePromotionPress = async (item: any) => {
+    // Track the exact feed promotion before leaving the feed. Navigation must
+    // remain available even if analytics is temporarily unavailable.
+    try {
+      await handlePromotionClick(String(item.id));
+    } catch {
+      // The backend reports delivery/attribution failures through its own logs.
+    }
+
     const navigationTarget = item.data.navigationTarget || 'Products';
     const navigationParams = item.data.navigationParams || {
       type: item.data.variant,
@@ -129,6 +144,7 @@ const FeedSlider = () => {
                 key={String(item.id)}
                 data={item.data}
                 onPress={() => handlePromotionPress(item)}
+                onDismiss={() => handleDismissPromotion(String(item.id))}
               />
             ),
           )}
