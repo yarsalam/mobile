@@ -1,6 +1,6 @@
 import {useMutation} from '@tanstack/react-query';
 import {useToast} from '../../../context/ToastContext';
-import {login} from '../queries/auth';
+import {login, syncAcquisitionTouch} from '../queries/auth';
 import {useAuth} from '../../../context/AuthContext';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {RootStackParamList} from '../../../../types/rootStackParamList';
@@ -16,6 +16,7 @@ export function useLoginMutation() {
     mutationFn: login,
     onSuccess: async data => {
       await setToken(data.token); // ✅ مهم
+      void syncAcquisitionTouch().catch(() => undefined);
       showToast('به یارسلام خوش آمدید', 'success');
     },
     onError: (err: any) => {
