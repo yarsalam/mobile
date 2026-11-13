@@ -199,6 +199,18 @@ jobs:
         run: npm run lint
         continue-on-error: true
 
+      - name: Lint acquisition attribution changes (blocking)
+        run: >-
+          npx eslint
+          App.tsx
+          src/utils/acquisition.ts
+          src/utils/acquisition.spec.ts
+          src/pages/auth/Register.tsx
+          src/api/auth/queries/auth.ts
+          src/api/auth/mutations/useLoginutation.ts
+          src/api/auth/mutations/useMultiStepProfileMutation.ts
+          src/schemas/authSchemas.ts
+
       - name: Type-check the React Native application (blocking)
         run: npx tsc --noEmit
 
