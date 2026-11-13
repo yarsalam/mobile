@@ -75,9 +75,7 @@ function touchFromUrl(rawUrl: string): AcquisitionTouch | null {
     const medium = safeString(params.get('utm_medium'), 80)?.toLowerCase() ?? null;
     let source = rawSource
       ? sourceAliases[rawSource] ?? rawSource.replace(/\s+/g, '_')
-      : classifyReferrer(hostOnly(params.get('referrer'))) ??
-        classifyReferrer(hostOnly(rawUrl)) ??
-        'unattributed';
+      : classifyReferrer(hostOnly(params.get('referrer'))) ?? 'unattributed';
     if (referralCode) source = 'referral';
     if (source === 'google_organic' && ['cpc', 'ppc', 'paid', 'paid_search'].includes(medium ?? '')) {
       source = 'google_ads';
@@ -196,7 +194,7 @@ export async function getAcquisitionData() {
     const referrer = hostOnly(runtime.document?.referrer);
     const source = webSource
       ? sourceAliases[webSource.toLowerCase()] ?? webSource.toLowerCase()
-      : classifyReferrer(referrer) ?? 'unattributed';
+      : classifyReferrer(referrer) ?? (referrer ? 'referral' : 'direct');
     const webTouch: AcquisitionTouch = {
       source: storedReferral || params.get('ref') || params.get('invite') ? 'referral' : source,
       medium: params.get('utm_medium'),
@@ -211,8 +209,39 @@ export async function getAcquisitionData() {
       referralCode: storedReferral || params.get('ref') || params.get('invite'),
       capturedAt: new Date().toISOString(),
     };
-    firstTouch = firstTouch ?? webTouch;
+    const parseLocalTouch = (raw: string | null): AcquisitionTouch | null => {
+      if (!raw) return null;
+      try {
+        const value = JSON.parse(raw) as Partial<AcquisitionTouch>;
+        if (typeof value.source !== 'string' || typeof value.capturedAt !== 'string') return null;
+        return {
+          source: value.source,
+          medium: value.medium ?? null,
+          campaign: value.campaign ?? null,
+          campaignId: value.campaignId ?? null,
+          content: value.content ?? null,
+          term: value.term ?? null,
+          landingPage: value.landingPage ?? null,
+          referrer: value.referrer ?? null,
+          referralCode: value.referralCode ?? null,
+          capturedAt: value.capturedAt,
+        };
+      } catch {
+        return null;
+      }
+    };
+    const localFirst = parseLocalTouch(runtime.localStorage?.getItem(FIRST_TOUCH_KEY) ?? null);
+    const localLast = parseLocalTouch(runtime.localStorage?.getItem(LAST_TOUCH_KEY) ?? null);
+    firstTouch = firstTouch ?? localFirst ?? webTouch;
     lastTouch = webTouch;
+    try {
+      if (!runtime.localStorage?.getItem(FIRST_TOUCH_KEY)) {
+        runtime.localStorage?.setItem(FIRST_TOUCH_KEY, JSON.stringify(firstTouch));
+      }
+      runtime.localStorage?.setItem(LAST_TOUCH_KEY, JSON.stringify(webTouch));
+    } catch {
+      // Browser storage may be unavailable (private mode / storage policy).
+    }
   }
 
   const first = firstTouch ?? {
