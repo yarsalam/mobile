@@ -16,6 +16,7 @@ import BackgroundFetch from 'react-native-background-fetch';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {API_BASE_URL} from './src/config/api';
 import {getDeviceHeaders} from './src/lib/deviceInfo';
+import {startAcquisitionTracking} from './src/utils/acquisition';
 
 const queryClient = new QueryClient();
 
@@ -58,6 +59,8 @@ async function checkNotifications() {
 }
 
 const App = () => {
+  useEffect(() => startAcquisitionTracking(), []);
+
   useEffect(() => {
     async function init() {
       try {
