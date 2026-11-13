@@ -5,6 +5,7 @@ import {fetchWithAuth} from '../../../lib/fetchWithAuth';
 export interface WalletPurchaseInput {
   bundleCode: string;
   userId: number;
+  pricingQuoteId?: string;
 }
 
 const pendingKey = (userId: number, bundleCode: string) =>
@@ -20,7 +21,11 @@ const createIdempotencyKey = () =>
  */
 const inFlightWalletCheckouts = new Map<string, Promise<unknown>>();
 
-async function performWalletPurchase({bundleCode, userId}: WalletPurchaseInput) {
+async function performWalletPurchase({
+  bundleCode,
+  userId,
+  pricingQuoteId,
+}: WalletPurchaseInput) {
   const storageKey = pendingKey(userId, bundleCode);
   let idempotencyKey = await AsyncStorage.getItem(storageKey);
 
@@ -34,7 +39,13 @@ async function performWalletPurchase({bundleCode, userId}: WalletPurchaseInput) 
       `/payments/buy/${encodeURIComponent(bundleCode)}`,
       {
         method: 'POST',
-        headers: {'Idempotency-Key': idempotencyKey},
+        headers: {
+          'Idempotency-Key': idempotencyKey,
+          ...(pricingQuoteId ? {'Content-Type': 'application/json'} : {}),
+        },
+        ...(pricingQuoteId
+          ? {body: JSON.stringify({pricingQuoteId})}
+          : {}),
       },
     );
 
