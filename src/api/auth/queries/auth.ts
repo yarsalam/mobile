@@ -8,6 +8,7 @@ import {z} from 'zod';
 import {fetchWithAuth} from '../../../lib/fetchWithAuth';
 import {getDeviceHeaders} from '../../../lib/deviceInfo';
 import {API_BASE_URL} from '../../../config/api';
+import {getAcquisitionData} from '../../../utils/acquisition';
 
 // Public requests still send device headers: registration verification uses them
 // to bind verification to the device that initiated the flow.
@@ -94,8 +95,19 @@ export const login = (data: z.infer<typeof loginSchema>) => {
   });
 };
 
-export const getCurrentUser = () => {
-  return fetchWithAuth(`${API_BASE_URL}/auth/me`);
+export const syncAcquisitionTouch = async () => {
+  const attribution = await getAcquisitionData();
+  return fetchWithAuth(`${API_BASE_URL}/auth/acquisition-touch`, {
+    method: 'POST',
+    body: JSON.stringify({lastTouch: attribution.acquisition.lastTouch}),
+  });
+};
+
+export const getCurrentUser = async () => {
+  const user = await fetchWithAuth(`${API_BASE_URL}/auth/me`);
+  // Best-effort sync: attribution must never block opening the app.
+  void syncAcquisitionTouch().catch(() => undefined);
+  return user;
 };
 
 export const multiStepProfile = (data: MultiStepProfilePayload) => {
