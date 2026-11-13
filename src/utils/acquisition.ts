@@ -162,13 +162,13 @@ export function startAcquisitionTracking() {
   const subscription = Linking.addEventListener('url', event => {
     const touch = touchFromUrl(event.url);
     if (touch && active) {
-      void storeTouch(touch).catch(() => {
+      storeTouch(touch).catch(() => {
         if (__DEV__) console.warn('[acquisition] deep-link capture failed');
       });
     }
   });
 
-  void captureInitialUrl().catch(() => {
+  captureInitialUrl().catch(() => {
     if (__DEV__) console.warn('[acquisition] initial-link capture failed');
   });
 
@@ -218,7 +218,10 @@ export async function getAcquisitionData() {
   } else {
     const runtime = globalThis as unknown as {
       location?: {search?: string; pathname?: string; origin?: string};
-      localStorage?: {getItem: (key: string) => string | null};
+      localStorage?: {
+        getItem: (key: string) => string | null;
+        setItem: (key: string, value: string) => void;
+      };
       document?: {referrer?: string};
     };
     const params = new URLSearchParams(runtime.location?.search ?? '');
@@ -267,7 +270,12 @@ export async function getAcquisitionData() {
     const localFirst = parseLocalTouch(runtime.localStorage?.getItem(FIRST_TOUCH_KEY) ?? null);
     const localLast = parseLocalTouch(runtime.localStorage?.getItem(LAST_TOUCH_KEY) ?? null);
     firstTouch = firstTouch ?? localFirst ?? webTouch;
-    lastTouch = webTouch;
+    // A tagged re-entry updates last-touch; an untagged direct visit retains
+    // the last known attributable touch rather than overwriting it with noise.
+    const hasExplicitWebTouch = Boolean(
+      webSource || storedReferral || params.get('ref') || params.get('invite') || referrer,
+    );
+    lastTouch = hasExplicitWebTouch ? webTouch : localLast ?? webTouch;
     try {
       if (!runtime.localStorage?.getItem(FIRST_TOUCH_KEY)) {
         runtime.localStorage?.setItem(FIRST_TOUCH_KEY, JSON.stringify(firstTouch));
