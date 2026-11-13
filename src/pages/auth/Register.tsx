@@ -60,6 +60,7 @@ const Register: React.FC<RegisterProps> = () => {
       acquisitionKeyword,
       referralCode,
       acquisitionMeta,
+      acquisition,
     } = acq;
 
     const sanitizedData = {
@@ -69,6 +70,7 @@ const Register: React.FC<RegisterProps> = () => {
       acquisitionSource,
       acquisitionKeyword,
       metadata: {referralCode, ...acquisitionMeta},
+      acquisition,
     };
 
     // خود endpoint ثبت‌نام شماره‌های قبلی را تشخیص می‌دهد. حذف درخواست
