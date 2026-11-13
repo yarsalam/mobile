@@ -79,9 +79,19 @@ const FeedSlider = () => {
       // The backend reports delivery/attribution failures through its own logs.
     }
 
-    const navigationTarget = item.data.navigationTarget || 'Products';
-    const navigationParams = item.data.navigationParams || {
-      type: item.data.variant,
+    const requestedTarget = item.data.navigationTarget;
+    // Backend legacy promotion templates still name the old "Payment" and
+    // "EditProfile" routes. Resolve them to screens actually registered by
+    // this app, and preserve the promotion ID for checkout attribution.
+    const navigationTarget =
+      requestedTarget === 'Payment'
+        ? 'Products'
+        : requestedTarget === 'EditProfile'
+          ? 'EditUserProfile'
+          : requestedTarget || 'Products';
+    const navigationParams = {
+      ...(item.data.navigationParams || {type: item.data.variant}),
+      promotionId: String(item.id),
     };
     navigation.navigate(navigationTarget as any, navigationParams);
   };
