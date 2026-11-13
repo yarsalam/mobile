@@ -112,11 +112,31 @@ async function captureInitialUrl() {
     AsyncStorage.getItem(FIRST_TOUCH_KEY),
     Linking.getInitialURL(),
   ]);
-  if (!initialUrl) return;
-  const touch = touchFromUrl(initialUrl);
-  if (!touch) return;
-  if (!firstRaw) await AsyncStorage.setItem(FIRST_TOUCH_KEY, JSON.stringify(touch));
-  await AsyncStorage.setItem(LAST_TOUCH_KEY, JSON.stringify(touch));
+  const touch = initialUrl ? touchFromUrl(initialUrl) : null;
+  if (touch) {
+    if (!firstRaw) await AsyncStorage.setItem(FIRST_TOUCH_KEY, JSON.stringify(touch));
+    await AsyncStorage.setItem(LAST_TOUCH_KEY, JSON.stringify(touch));
+    return;
+  }
+
+  // Freeze an honest unknown first touch on the first direct app launch.
+  // A later campaign deep link must update last-touch, not rewrite acquisition.
+  if (!firstRaw) {
+    const unattributed: AcquisitionTouch = {
+      source: 'unattributed',
+      medium: null,
+      campaign: null,
+      campaignId: null,
+      content: null,
+      term: null,
+      landingPage: null,
+      referrer: null,
+      referralCode: null,
+      capturedAt: new Date().toISOString(),
+    };
+    await AsyncStorage.setItem(FIRST_TOUCH_KEY, JSON.stringify(unattributed));
+    await AsyncStorage.setItem(LAST_TOUCH_KEY, JSON.stringify(unattributed));
+  }
 }
 
 /**
