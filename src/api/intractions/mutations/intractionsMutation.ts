@@ -1,5 +1,5 @@
 import {useQuery} from '@tanstack/react-query';
-import {getFeed, dismissPromotion} from '../queries/intractionsApi';
+import {getFeed, dismissPromotion, trackPromotionClick} from '../queries/intractionsApi';
 import {useLikeMutation} from './useLikeMutation';
 import {useSuperLikeMutation} from './useSuperLikeMutation';
 import {usePassMutation} from './usePassMutation';
@@ -40,6 +40,10 @@ export const useFeed = (limit: number = 20) => {
     },
   });
 
+  const promotionClickMutation = useMutation({
+    mutationFn: trackPromotionClick,
+  });
+
   return {
     feed,
     isLoading,
@@ -51,6 +55,8 @@ export const useFeed = (limit: number = 20) => {
     handlePass: (userId: number) => passMutation.mutate(userId),
     handleDismissPromotion: (promotionId: string) =>
       dismissMutation.mutate(promotionId),
+    handlePromotionClick: (promotionId: string) =>
+      promotionClickMutation.mutateAsync(promotionId),
     isLiking: likeMutation.isPending,
     isSuperLiking: superLikeMutation.isPending,
   };
