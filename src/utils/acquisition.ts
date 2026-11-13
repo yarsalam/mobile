@@ -90,7 +90,9 @@ function touchFromUrl(rawUrl: string): AcquisitionTouch | null {
       content: safeString(params.get('utm_content')),
       term: safeString(params.get('utm_term')),
       // Do not retain query strings or fragments: they may contain secrets or identifiers.
-      landingPage: `${url.origin}${url.pathname.slice(0, 500)}`.slice(0, 600),
+      // Custom mobile schemes have URL.origin === "null"; preserve their scheme
+      // and route instead of persisting a misleading "null/..." value.
+      landingPage: `${url.origin === 'null' ? `${url.protocol}//${url.host}` : url.origin}${url.pathname.slice(0, 500)}`.slice(0, 600),
       referrer: hostOnly(params.get('referrer')),
       referralCode,
       capturedAt: new Date().toISOString(),
