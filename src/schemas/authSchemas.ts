@@ -12,6 +12,43 @@ export const registerStep1Schema = z.object({
       'شماره موبایل باید با 09 یا ۰۹ شروع شود',
     ),
   gender: z.string().nonempty('جنسیت خود را انتخاب کنید'),
+  acquisitionSource: z.string().max(80).optional(),
+  acquisitionKeyword: z.string().max(160).nullable().optional(),
+  referralCode: z.string().max(96).nullable().optional(),
+  metadata: z.object({
+    referralCode: z.string().max(96).nullable().optional(),
+    campaign: z.string().max(160).nullable().optional(),
+    campaignId: z.string().max(120).nullable().optional(),
+    medium: z.string().max(80).nullable().optional(),
+    landingPage: z.string().max(600).nullable().optional(),
+    referrer: z.string().max(160).nullable().optional(),
+  }).optional(),
+  acquisition: z.object({
+    firstTouch: z.object({
+      source: z.string().max(80),
+      medium: z.string().max(80).nullable(),
+      campaign: z.string().max(160).nullable(),
+      campaignId: z.string().max(120).nullable(),
+      content: z.string().max(160).nullable(),
+      term: z.string().max(160).nullable(),
+      landingPage: z.string().max(600).nullable(),
+      referrer: z.string().max(160).nullable(),
+      referralCode: z.string().max(96).nullable(),
+      capturedAt: z.string().datetime(),
+    }),
+    lastTouch: z.object({
+      source: z.string().max(80),
+      medium: z.string().max(80).nullable(),
+      campaign: z.string().max(160).nullable(),
+      campaignId: z.string().max(120).nullable(),
+      content: z.string().max(160).nullable(),
+      term: z.string().max(160).nullable(),
+      landingPage: z.string().max(600).nullable(),
+      referrer: z.string().max(160).nullable(),
+      referralCode: z.string().max(96).nullable(),
+      capturedAt: z.string().datetime(),
+    }),
+  }).optional(),
 });
 
 export const sendOtpWithChannelSchema = z.object({

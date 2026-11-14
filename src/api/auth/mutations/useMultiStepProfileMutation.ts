@@ -3,7 +3,7 @@ import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {RootStackParamList} from '../../../../types/rootStackParamList';
 import {useNavigation} from '@react-navigation/native';
 import {useToast} from '../../../context/ToastContext';
-import {multiStepProfile} from '../queries/auth';
+import {multiStepProfile, syncAcquisitionTouch} from '../queries/auth';
 import {useAuth} from '../../../context/AuthContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -17,6 +17,7 @@ export function useMultiStepProfileMutation() {
     onSuccess: async data => {
       if (data.token) {
         await setToken(data.token);
+        void syncAcquisitionTouch().catch(() => undefined);
         await Promise.all([
           'registerStep',
           'multiStepProfile',
