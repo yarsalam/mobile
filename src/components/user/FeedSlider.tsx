@@ -8,6 +8,7 @@ import LoadingWrapper from '../LoadingWrapper';
 import {useHintTour} from '../hints/HintTourContext';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {RootStackParamList} from '../../../types/rootStackParamList';
+import {getVisiblePromotionId} from '../../lib/promotionImpression';
 
 const {width} = Dimensions.get('window');
 const CARD_MARGIN = 12;
@@ -24,6 +25,7 @@ const FeedSlider = () => {
     handlePass,
     handleDismissPromotion,
     handlePromotionClick,
+    handlePromotionImpression,
   } = useFeed(30);
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -67,17 +69,36 @@ const FeedSlider = () => {
     const newIndex = Math.round(e.nativeEvent.contentOffset.x / SNAP);
     currentIndexRef.current = newIndex;
     isInteractingRef.current = false;
+
+    const promotionId = getVisiblePromotionId(feed, newIndex);
+    if (promotionId) {
+      void handlePromotionImpression(promotionId).catch(() => undefined);
+    }
   };
+
+  // Record the first active card when the feed query finishes loading. The
+  // tracker shares concurrent calls and deduplicates successful impressions.
+  useEffect(() => {
+    const visibleIndex = Math.min(
+      currentIndexRef.current,
+      Math.max(0, feed.length - 1),
+    );
+    currentIndexRef.current = visibleIndex;
+    const promotionId = getVisiblePromotionId(feed, visibleIndex);
+    if (promotionId) {
+      void handlePromotionImpression(promotionId).catch(() => undefined);
+    }
+  }, [feed, handlePromotionImpression]);
   // ────────────────────
 
-  const handlePromotionPress = async (item: any) => {
-    // Track the exact feed promotion before leaving the feed. Navigation must
-    // remain available even if analytics is temporarily unavailable.
-    try {
-      await handlePromotionClick(String(item.id));
-    } catch {
-      // The backend reports delivery/attribution failures through its own logs.
-    }
+  const handlePromotionPress = (item: any) => {
+    const promotionId = String(item.id);
+
+    // Ensure the backend has the impression before recording the click, but
+    // never make navigation wait for analytics/network availability.
+    void handlePromotionImpression(promotionId)
+      .then(() => handlePromotionClick(promotionId))
+      .catch(() => undefined);
 
     const requestedTarget = item.data.navigationTarget;
     // Backend legacy promotion templates still name the old "Payment" and
@@ -154,7 +175,12 @@ const FeedSlider = () => {
                 key={String(item.id)}
                 data={item.data}
                 onPress={() => handlePromotionPress(item)}
-                onDismiss={() => handleDismissPromotion(String(item.id))}
+                onDismiss={() => {
+                  const promotionId = String(item.id);
+                  void handlePromotionImpression(promotionId)
+                    .then(() => handleDismissPromotion(promotionId))
+                    .catch(() => undefined);
+                }}
               />
             ),
           )}
