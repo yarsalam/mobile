@@ -6,6 +6,7 @@ export interface WalletPurchaseInput {
   bundleCode: string;
   userId: number;
   pricingQuoteId?: string;
+  promotionId?: string;
 }
 
 const pendingKey = (userId: number, bundleCode: string) =>
@@ -25,6 +26,7 @@ async function performWalletPurchase({
   bundleCode,
   userId,
   pricingQuoteId,
+  promotionId,
 }: WalletPurchaseInput) {
   const storageKey = pendingKey(userId, bundleCode);
   let idempotencyKey = await AsyncStorage.getItem(storageKey);
@@ -35,16 +37,24 @@ async function performWalletPurchase({
   }
 
   try {
+    const checkoutContext: {
+      pricingQuoteId?: string;
+      promotionId?: string;
+    } = {};
+    if (pricingQuoteId) checkoutContext.pricingQuoteId = pricingQuoteId;
+    if (promotionId) checkoutContext.promotionId = promotionId;
+    const hasCheckoutContext = Object.keys(checkoutContext).length > 0;
+
     const result = await fetchWithAuth(
       `/payments/buy/${encodeURIComponent(bundleCode)}`,
       {
         method: 'POST',
         headers: {
           'Idempotency-Key': idempotencyKey,
-          ...(pricingQuoteId ? {'Content-Type': 'application/json'} : {}),
+          ...(hasCheckoutContext ? {'Content-Type': 'application/json'} : {}),
         },
-        ...(pricingQuoteId
-          ? {body: JSON.stringify({pricingQuoteId})}
+        ...(hasCheckoutContext
+          ? {body: JSON.stringify(checkoutContext)}
           : {}),
       },
     );
