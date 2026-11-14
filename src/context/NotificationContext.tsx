@@ -4,15 +4,9 @@ import {io, Socket} from 'socket.io-client';
 import {useAuth} from './AuthContext';
 import {useQueryClient} from '@tanstack/react-query';
 import {useToast} from './ToastContext';
-import notifee, {EventType} from '@notifee/react-native';
-import messaging from '@react-native-firebase/messaging';
+import notifee from '@notifee/react-native';
 import {API_BASE_URL} from '../config/api';
-import {fetchWithAuth} from '../lib/fetchWithAuth';
-import {navigationRef} from '../lib/navigationRef';
-import {
-  registerRemotePushDevice,
-  syncRemotePushToken,
-} from '../lib/pushNotifications';
+import {refreshNotificationQueries} from '../lib/notificationSync';
 
 export const NotificationSocketContext = createContext<{
   socket: Socket | null;
@@ -47,55 +41,43 @@ export const NotificationSocketProvider = ({
       return;
     }
 
-    let active = true;
-    let unsubscribeTokenRefresh: (() => void) | undefined;
-    let unsubscribeForegroundMessage: (() => void) | undefined;
-    let unsubscribeNotificationOpen: (() => void) | undefined;
-    let unsubscribeNotifeePress: (() => void) | undefined;
-
-    const invalidateNotificationQueries = async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({queryKey: ['unread-notifications']}),
-        queryClient.invalidateQueries({queryKey: ['notifications']}),
-        queryClient.invalidateQueries({queryKey: ['interaction-count']}),
-        queryClient.invalidateQueries({queryKey: ['system-count']}),
-        queryClient.invalidateQueries({queryKey: ['interactions']}),
-        queryClient.invalidateQueries({queryKey: ['system-notifications']}),
-        queryClient.invalidateQueries({queryKey: ['badges']}),
-      ]);
-    };
-
-    const handleRemoteNotificationOpen = async (
-      data?: Record<string, string> | null,
-    ) => {
-      const notificationId = Number(data?.notificationId);
-      if (Number.isSafeInteger(notificationId) && notificationId > 0) {
-        try {
-          await fetchWithAuth(`/notifications/click/${notificationId}`, {
-            method: 'POST',
-          });
-        } catch {
-          // Opening the app must never be blocked by analytics delivery.
-        }
-      }
-
-      await invalidateNotificationQueries();
-      if (navigationRef.isReady()) {
-        navigationRef.navigate('Notifications');
-      }
-    };
+    const seenNotificationIds = new Set<number>();
+    const refreshInbox = () => refreshNotificationQueries(queryClient);
 
     const socketUrl = API_BASE_URL.replace(/\/$/, '') + '/notification';
     const newSocket = io(socketUrl, {
       auth: {token},
       transports: ['websocket'],
       reconnection: true,
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 15000,
+    });
+
+    // Reconcile the local cache against the server-owned inbox on every
+    // successful initial connection and reconnect.
+    newSocket.on('connect', () => {
+      void refreshInbox();
     });
 
     newSocket.on(
       'notification',
-      async (notif: {message?: string; type?: string}) => {
-        await invalidateNotificationQueries();
+      async (notif: {
+        id?: number;
+        message?: string;
+        type?: string;
+      }) => {
+        await refreshInbox();
+
+        const notificationId = Number(notif?.id);
+        if (Number.isSafeInteger(notificationId) && notificationId > 0) {
+          if (seenNotificationIds.has(notificationId)) return;
+          seenNotificationIds.add(notificationId);
+          if (seenNotificationIds.size > 200) {
+            const oldest = seenNotificationIds.values().next().value;
+            if (oldest !== undefined) seenNotificationIds.delete(oldest);
+          }
+        }
 
         const message = notif?.message || 'اعلان جدید دریافت شد';
         const notificationType =
@@ -107,6 +89,10 @@ export const NotificationSocketProvider = ({
           showToast(message, 'info', undefined, notificationType);
         } else {
           await notifee.displayNotification({
+            id:
+              Number.isSafeInteger(notificationId) && notificationId > 0
+                ? `notification-${notificationId}`
+                : undefined,
             title: 'یارسلام',
             body: message,
             android: {
@@ -118,80 +104,20 @@ export const NotificationSocketProvider = ({
       },
     );
 
-    setSocket(newSocket);
-
-    // FCM is optional until the owner supplies the Android/iOS Firebase app
-    // configuration. Failure here must not disable WebSocket/local fallback.
-    const initialiseRemotePush = async () => {
-      await registerRemotePushDevice();
-      if (!active) return;
-
-      unsubscribeTokenRefresh = messaging().onTokenRefresh(newToken => {
-        void syncRemotePushToken(newToken).catch(error => {
-          if (__DEV__) {
-            console.warn('[FCM] token refresh registration failed', error);
-          }
-        });
-      });
-
-      unsubscribeForegroundMessage = messaging().onMessage(
-        async remoteMessage => {
-          if (!active) return;
-
-          const title = remoteMessage.notification?.title || 'یارسلام';
-          const body =
-            remoteMessage.notification?.body || 'اعلان جدید دریافت شد';
-
-          await notifee.displayNotification({
-            title,
-            body,
-            data: remoteMessage.data,
-            android: {
-              channelId: 'default_channel_v2',
-              pressAction: {id: 'default'},
-            },
-            ios: {sound: 'default'},
-          });
-          await invalidateNotificationQueries();
-        },
-      );
-
-      unsubscribeNotificationOpen = messaging().onNotificationOpenedApp(
-        remoteMessage => {
-          void handleRemoteNotificationOpen(remoteMessage.data);
-        },
-      );
-
-      unsubscribeNotifeePress = notifee.onForegroundEvent(({type, detail}) => {
-        if (type === EventType.PRESS) {
-          const data = detail.notification?.data as
-            | Record<string, string>
-            | undefined;
-          void handleRemoteNotificationOpen(data);
+    const appStateSubscription = AppState.addEventListener(
+      'change',
+      nextState => {
+        appStateRef.current = nextState;
+        if (nextState === 'active') {
+          if (!newSocket.connected) newSocket.connect();
+          else void refreshInbox();
         }
-      });
+      },
+    );
 
-      const initialMessage = await messaging().getInitialNotification();
-      if (initialMessage?.data) {
-        await handleRemoteNotificationOpen(initialMessage.data);
-      }
-    };
-
-    void initialiseRemotePush().catch(error => {
-      if (__DEV__) {
-        console.warn(
-          '[FCM] remote push is not configured on this app build',
-          error,
-        );
-      }
-    });
-
+    setSocket(newSocket);
     return () => {
-      active = false;
-      unsubscribeTokenRefresh?.();
-      unsubscribeForegroundMessage?.();
-      unsubscribeNotificationOpen?.();
-      unsubscribeNotifeePress?.();
+      appStateSubscription.remove();
       newSocket.removeAllListeners();
       newSocket.disconnect();
       setSocket(current => (current === newSocket ? null : current));
