@@ -7,7 +7,7 @@ import {
 describe('notification reconnect synchronization', () => {
   it('invalidates every server-backed notification projection', async () => {
     const queryClient = {
-      invalidateQueries: jest.fn().mockResolvedValue(undefined),
+      invalidateQueries: jest.fn(async () => undefined),
     };
 
     await refreshNotificationQueries(queryClient as any);
