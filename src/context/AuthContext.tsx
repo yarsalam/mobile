@@ -14,6 +14,7 @@ import {AuthContextType} from '../../types/authContextType';
 import {User} from '../../types/userType';
 import {API_BASE_URL} from '../config/api';
 import {login as loginApi} from '../api/auth/queries/auth';
+import {revokeRemotePushDevice} from '../lib/pushNotifications';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -74,6 +75,11 @@ export const AuthProvider = ({children}: {children: React.ReactNode}) => {
   const setToken = useCallback(
     async (newToken: string | null) => {
       if (!newToken) {
+        try {
+          await revokeRemotePushDevice();
+        } catch {
+          // Local logout must complete even when push-token revocation is offline.
+        }
         await AsyncStorage.removeItem('auth_token');
         setTokenState(null);
         queryClient.removeQueries({queryKey: ['me']});
@@ -114,6 +120,11 @@ export const AuthProvider = ({children}: {children: React.ReactNode}) => {
   );
 
   const logout = useCallback(async () => {
+    try {
+      await revokeRemotePushDevice();
+    } catch {
+      // Local logout must complete even when push-token revocation is offline.
+    }
     await AsyncStorage.removeItem('auth_token');
     await AsyncStorage.removeItem('temp_auth_token');
     setTokenState(null);
