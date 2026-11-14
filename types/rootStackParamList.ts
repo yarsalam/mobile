@@ -7,7 +7,7 @@ export type RootStackParamList = {
   TelegramActivation: undefined;
   WhatsAppActivation: undefined;
   Welcome: undefined;
-  Products: undefined;
+  Products: {type?: string; promotionId?: string} | undefined;
   multiStepProfile: undefined;
   UserPanel: undefined;
   EditImg: undefined;
