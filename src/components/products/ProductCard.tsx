@@ -21,6 +21,7 @@ interface Props {
   description: string;
   icon: string;
   options: ProductOption[];
+  promotionId?: string;
 }
 
 export default function ProductCard({
@@ -28,6 +29,7 @@ export default function ProductCard({
   description,
   icon,
   options,
+  promotionId,
 }: Props) {
   const {theme} = useTheme();
   const styles = getStyles(theme);
@@ -142,6 +144,7 @@ export default function ProductCard({
         bundleCode: String(selected.id),
         userId: Number(user.id),
         ...(quote.quoteId ? {pricingQuoteId: quote.quoteId} : {}),
+        ...(promotionId ? {promotionId} : {}),
       });
       Alert.alert('✅ موفق', `${title} با موفقیت فعال شد!`);
     } catch (err: any) {
