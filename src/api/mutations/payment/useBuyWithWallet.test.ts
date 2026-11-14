@@ -50,6 +50,57 @@ describe('buyWithWallet idempotency', () => {
     );
   });
 
+  it('sends the signed pricing quote with the wallet checkout', async () => {
+    mockedFetch.mockResolvedValueOnce({success: true} as any);
+
+    await buyWithWallet({
+      bundleCode: 'vip-month',
+      userId: 42,
+      pricingQuoteId: 'signed.quote',
+    });
+
+    const options = mockedFetch.mock.calls[0][1] as any;
+    expect(options.body).toBe(JSON.stringify({pricingQuoteId: 'signed.quote'}));
+    expect(options.headers['Content-Type']).toBe('application/json');
+    expect(options.headers['Idempotency-Key']).toMatch(/^ys-wallet-/);
+  });
+
+
+  it('sends promotion attribution independently alongside a signed pricing quote', async () => {
+    mockedFetch.mockResolvedValueOnce({success: true} as any);
+
+    await buyWithWallet({
+      bundleCode: 'vip-month',
+      userId: 42,
+      pricingQuoteId: 'signed.quote',
+      promotionId: 'promo-0123456789abcdef',
+    });
+
+    const options = mockedFetch.mock.calls[0][1] as any;
+    expect(JSON.parse(options.body)).toEqual({
+      pricingQuoteId: 'signed.quote',
+      promotionId: 'promo-0123456789abcdef',
+    });
+    expect(options.headers['Content-Type']).toBe('application/json');
+    expect(options.headers['Idempotency-Key']).toMatch(/^ys-wallet-/);
+  });
+
+  it('sends promotion attribution even when no pricing experiment quote is present', async () => {
+    mockedFetch.mockResolvedValueOnce({success: true} as any);
+
+    await buyWithWallet({
+      bundleCode: 'vip-month',
+      userId: 42,
+      promotionId: 'promo-0123456789abcdef',
+    });
+
+    const options = mockedFetch.mock.calls[0][1] as any;
+    expect(options.body).toBe(JSON.stringify({
+      promotionId: 'promo-0123456789abcdef',
+    }));
+    expect(options.headers['Content-Type']).toBe('application/json');
+  });
+
   it('reuses the same key after a network failure and a retry', async () => {
     mockedFetch
       .mockRejectedValueOnce(new Error('network unavailable'))
