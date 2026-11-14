@@ -34,6 +34,11 @@ export const unblockUser = async (_userId: number, targetId: number) =>
     body: JSON.stringify({targetId}),
   });
 
+export const trackPromotionImpression = (promotionId: string) =>
+  fetchWithAuth('/feed/impression/' + encodeURIComponent(promotionId), {
+    method: 'POST',
+  });
+
 export const trackPromotionClick = (promotionId: string) =>
   fetchWithAuth('/feed/click/' + encodeURIComponent(promotionId), {
     method: 'POST',
