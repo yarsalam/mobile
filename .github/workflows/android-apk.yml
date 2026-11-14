@@ -61,6 +61,8 @@ concurrency:
 
 jobs:
   build-test-apk:
+    permissions:
+      contents: write
     name: Lint, test and build standalone Android test APK
     runs-on: ubuntu-latest
     timeout-minutes: 45

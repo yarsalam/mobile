@@ -15,5 +15,6 @@ export async function getDeviceHeaders() {
     'X-Device-Id': deviceId,
     'X-App-Version': appVersion,
     'X-OS-Version': osVersion,
+    'X-Timezone': Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
   };
 }
