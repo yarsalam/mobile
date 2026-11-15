@@ -69,10 +69,17 @@ export const NotificationSocketProvider = ({
     const unsubscribe = notifee.onForegroundEvent(({type, detail}) => {
       if (type !== EventType.PRESS) return;
       const rawId = detail.notification?.id;
-      const match =
-        typeof rawId === 'string' ? /^notification-(\\d+)$/.exec(rawId) : null;
-      if (match) {
-        fetchWithAuth(`/notifications/click/${Number(match[1])}`, {
+      const prefix = 'notification-';
+      const rawNotificationId =
+        typeof rawId === 'string' && rawId.startsWith(prefix)
+          ? rawId.slice(prefix.length)
+          : '';
+      const isDecimalId =
+        rawNotificationId.length > 0 &&
+        [...rawNotificationId].every(character => character >= '0' && character <= '9');
+      const notificationId = Number(rawNotificationId);
+      if (isDecimalId && Number.isSafeInteger(notificationId) && notificationId > 0) {
+        fetchWithAuth(`/notifications/click/${notificationId}`, {
           method: 'POST',
         }).catch(() => undefined);
       }
@@ -101,7 +108,10 @@ export const NotificationSocketProvider = ({
     const refreshInbox = () =>
       refreshNotificationQueries(queryClient).catch(() => undefined);
 
-    const socketUrl = API_BASE_URL.replace(/\\/$/, '') + '/notification';
+    const socketBaseUrl = API_BASE_URL.endsWith('/')
+      ? API_BASE_URL.slice(0, -1)
+      : API_BASE_URL;
+    const socketUrl = `${socketBaseUrl}/notification`;
     const newSocket = io(socketUrl, {
       auth: {token},
       transports: ['websocket'],

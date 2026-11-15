@@ -46,7 +46,10 @@ export async function consumePendingNotificationTap({
   if (pendingClickId === null) return;
 
   await storage.removeItem(PENDING_NOTIFICATION_CLICK_ID_KEY);
-  if (!/^\\d+$/.test(pendingClickId)) return;
+  const isDecimalId =
+    pendingClickId.length > 0 &&
+    [...pendingClickId].every(character => character >= '0' && character <= '9');
+  if (!isDecimalId) return;
 
   const notificationId = Number(pendingClickId);
   if (!Number.isSafeInteger(notificationId) || notificationId <= 0) return;
