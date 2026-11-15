@@ -56,11 +56,12 @@ export const NotificationSocketProvider = ({
         await fetchWithAuth(`/notifications/click/${Number(pendingId)}`, {
           method: 'POST',
         });
+      } catch {
+        // Click analytics is best-effort; never replay an old user's ID.
+      } finally {
         if (active) {
           await AsyncStorage.removeItem('pending_notification_click_id');
         }
-      } catch {
-        // Keep the pending ID so a later authenticated launch can retry it.
       }
     })().catch(() => undefined);
     return () => {
