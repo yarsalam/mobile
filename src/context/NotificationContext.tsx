@@ -33,7 +33,7 @@ export const NotificationSocketProvider = ({
       if (type !== EventType.PRESS) return;
       const rawId = detail.notification?.id;
       const match =
-        typeof rawId === 'string' ? /^notification-(\\d+)$/.exec(rawId) : null;
+        typeof rawId === 'string' ? /^notification-(\d+)$/.exec(rawId) : null;
       if (match) {
         void fetchWithAuth(`/notifications/click/${Number(match[1])}`, {
           method: 'POST',
@@ -51,7 +51,7 @@ export const NotificationSocketProvider = ({
       const pendingId = await AsyncStorage.getItem(
         'pending_notification_click_id',
       );
-      if (!pendingId || !/^\\d+$/.test(pendingId)) return;
+      if (!pendingId || !/^\d+$/.test(pendingId)) return;
       try {
         await fetchWithAuth(`/notifications/click/${Number(pendingId)}`, {
           method: 'POST',
