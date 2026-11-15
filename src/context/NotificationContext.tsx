@@ -102,18 +102,24 @@ export const NotificationSocketProvider = ({
         if (appStateRef.current === 'active') {
           showToast(message, 'info', undefined, notificationType);
         } else {
-          await notifee.displayNotification({
-            id:
-              Number.isSafeInteger(notificationId) && notificationId > 0
-                ? `notification-${notificationId}`
-                : undefined,
-            title: 'یارسلام',
-            body: message,
-            android: {
-              channelId: 'default_channel_v2',
-              pressAction: {id: 'default'},
-            },
-          });
+          try {
+            await notifee.displayNotification({
+              id:
+                Number.isSafeInteger(notificationId) && notificationId > 0
+                  ? `notification-${notificationId}`
+                  : undefined,
+              title: 'یارسلام',
+              body: message,
+              android: {
+                channelId: 'default_channel_v2',
+                pressAction: {id: 'default'},
+              },
+            });
+          } catch {
+            if (__DEV__) {
+              console.warn('[notifications] local display failed');
+            }
+          }
         }
       },
     );
