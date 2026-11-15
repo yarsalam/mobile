@@ -118,6 +118,8 @@ export const AuthProvider = ({children}: {children: React.ReactNode}) => {
     async (newToken: string | null) => {
       if (!newToken) {
         await AsyncStorage.removeItem('auth_token');
+        await AsyncStorage.removeItem('pending_notification_click_id');
+        await AsyncStorage.removeItem('pending_notification_navigation');
         setTokenState(null);
         queryClient.removeQueries({queryKey: ['me']});
         return;
@@ -159,6 +161,8 @@ export const AuthProvider = ({children}: {children: React.ReactNode}) => {
   const logout = useCallback(async () => {
     await AsyncStorage.removeItem('auth_token');
     await AsyncStorage.removeItem('temp_auth_token');
+    await AsyncStorage.removeItem('pending_notification_click_id');
+    await AsyncStorage.removeItem('pending_notification_navigation');
     setTokenState(null);
     queryClient.clear();
   }, [queryClient]);
