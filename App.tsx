@@ -25,7 +25,7 @@ const App = () => {
           name: 'نوتیفیکیشن‌های یارسلام',
           importance: AndroidImportance.HIGH,
         });
-      } catch (error) {
+      } catch {
         if (__DEV__) console.warn('[notifications] local presentation setup failed');
       }
     }
