@@ -2,7 +2,7 @@ name: Android test APK
 
 on:
   push:
-    branches: [main, fix/mobile-wallet-checkout-idempotency-2026-11-08, fix/mobile-ai-provider-disclosure-2026-11-10, feature/notifications-socketio-mobile]
+    branches: [main, fix/mobile-wallet-checkout-idempotency-2026-11-08, fix/mobile-ai-provider-disclosure-2026-11-10]
     paths:
       - ".github/workflows/android-apk.yml"
       - ".github/workflows/android-signed-release.yml"
@@ -58,7 +58,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: android-test-apk-${{ github.event.pull_request.head.ref || github.ref }}
+  group: android-test-apk-${{ github.event_name }}-${{ github.event.pull_request.head.ref || github.ref }}
   cancel-in-progress: true
 
 jobs:
