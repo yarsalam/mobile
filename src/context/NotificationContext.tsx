@@ -42,7 +42,8 @@ export const NotificationSocketProvider = ({
     }
 
     const seenNotificationIds = new Set<number>();
-    const refreshInbox = () => refreshNotificationQueries(queryClient);
+    const refreshInbox = () =>
+      refreshNotificationQueries(queryClient).catch(() => undefined);
 
     const socketUrl = API_BASE_URL.replace(/\/$/, '') + '/notification';
     const newSocket = io(socketUrl, {
@@ -55,7 +56,8 @@ export const NotificationSocketProvider = ({
     });
 
     // Reconcile the local cache against the server-owned inbox on every
-    // successful initial connection and reconnect.
+    // successful initial connection and reconnect. Refresh failures must not
+    // create unhandled rejections or affect realtime notification display.
     newSocket.on('connect', () => {
       void refreshInbox();
     });
@@ -67,7 +69,9 @@ export const NotificationSocketProvider = ({
         message?: string;
         type?: string;
       }) => {
-        await refreshInbox();
+        // The Socket.IO event is already authenticated and persisted by the
+        // backend. Start reconciliation but do not wait for HTTP before showing it.
+        void refreshInbox();
 
         const notificationId = Number(notif?.id);
         if (Number.isSafeInteger(notificationId) && notificationId > 0) {
