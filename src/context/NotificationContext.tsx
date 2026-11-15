@@ -29,6 +29,7 @@ export const NotificationSocketProvider = ({
   );
 
   useEffect(() => {
+    if (!token) return;
     const unsubscribe = notifee.onForegroundEvent(({type, detail}) => {
       if (type !== EventType.PRESS) return;
       const rawId = detail.notification?.id;
@@ -42,7 +43,7 @@ export const NotificationSocketProvider = ({
       if (navigationRef.isReady()) navigationRef.navigate('Notifications');
     });
     return unsubscribe;
-  }, []);
+  }, [token]);
 
   useEffect(() => {
     if (!token) return;
