@@ -14,8 +14,44 @@ import {AuthContextType} from '../../types/authContextType';
 import {User} from '../../types/userType';
 import {API_BASE_URL} from '../config/api';
 import {login as loginApi} from '../api/auth/queries/auth';
+import {getDeviceHeaders} from '../lib/deviceInfo';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+async function syncAuthenticatedDevice(token: string): Promise<void> {
+  try {
+    const decoded = decodeToken(token);
+    const userId = Number(decoded?.sub);
+    if (!Number.isSafeInteger(userId) || userId <= 0) return;
+
+    const deviceHeaders = await getDeviceHeaders();
+    const response = await fetch(`${API_BASE_URL}/user-device`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+        ...deviceHeaders,
+      },
+      body: JSON.stringify({
+        userId,
+        deviceId: deviceHeaders['X-Device-Id'],
+        platform: 'mobile',
+        brand: deviceHeaders['X-Brand'],
+        model: deviceHeaders['X-Model'],
+        osVersion: deviceHeaders['X-OS-Version'],
+        appVersion: deviceHeaders['X-App-Version'],
+        timezone: deviceHeaders['X-Timezone'],
+      }),
+    });
+
+    if (!response.ok && __DEV__) {
+      console.warn('[device-sync] metadata update rejected:', response.status);
+    }
+  } catch {
+    // Device metadata is best-effort and must never block authentication.
+    if (__DEV__) console.warn('[device-sync] metadata update failed');
+  }
+}
 
 export const AuthProvider = ({children}: {children: React.ReactNode}) => {
   const queryClient = useQueryClient();
@@ -70,6 +106,13 @@ export const AuthProvider = ({children}: {children: React.ReactNode}) => {
   }, [error, isPermanent, queryClient]);
 
   const isAuthenticated = Boolean(isPermanent && user);
+
+  // Run after /auth/me succeeds so this covers both a fresh login and a
+  // previously stored session restored after an app restart or upgrade.
+  useEffect(() => {
+    if (!isAuthenticated || !token) return;
+    void syncAuthenticatedDevice(token);
+  }, [isAuthenticated, token]);
 
   const setToken = useCallback(
     async (newToken: string | null) => {
