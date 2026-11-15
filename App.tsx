@@ -12,6 +12,7 @@ import {Host} from 'react-native-portalize';
 import {HintTourProvider} from './src/components/hints/HintTourContext';
 import {useEffect} from 'react';
 import notifee, {AndroidImportance} from '@notifee/react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const queryClient = new QueryClient();
 
@@ -39,7 +40,19 @@ const App = () => {
         <MainProvider>
           <Host>
             <HintTourProvider>
-              <NavigationContainer ref={navigationRef}>
+              <NavigationContainer
+                ref={navigationRef}
+                onReady={async () => {
+                  const pending = await AsyncStorage.getItem(
+                    'pending_notification_navigation',
+                  );
+                  if (pending === '1') {
+                    await AsyncStorage.removeItem(
+                      'pending_notification_navigation',
+                    );
+                    navigationRef.navigate('Notifications');
+                  }
+                }}>
                 <AuthProvider>
                   <NotificationSocketProvider>
                     <ImageProvider>
