@@ -13,6 +13,7 @@ import {HintTourProvider} from './src/components/hints/HintTourContext';
 import {useEffect} from 'react';
 import notifee, {AndroidImportance} from '@notifee/react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import {decodeToken} from './src/lib/decodeToken';
 
 const queryClient = new QueryClient();
 
