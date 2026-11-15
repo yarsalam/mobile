@@ -67,7 +67,6 @@ const FeedSlider = () => {
     const newIndex = Math.round(e.nativeEvent.contentOffset.x / SNAP);
     currentIndexRef.current = newIndex;
     isInteractingRef.current = false;
-
   };
 
   // ────────────────────
