@@ -66,7 +66,7 @@ export const NotificationSocketProvider = ({
       if (type !== EventType.PRESS) return;
       const rawId = detail.notification?.id;
       const match =
-        typeof rawId === 'string' ? /^notification-(\\d+)$/.exec(rawId) : null;
+        typeof rawId === 'string' ? /^notification-(\d+)$/.exec(rawId) : null;
       if (match) {
         fetchWithAuth(`/notifications/click/${Number(match[1])}`, {
           method: 'POST',
@@ -97,7 +97,7 @@ export const NotificationSocketProvider = ({
     const refreshInbox = () =>
       refreshNotificationQueries(queryClient).catch(() => undefined);
 
-    const socketUrl = API_BASE_URL.replace(/\\/$/, '') + '/notification';
+    const socketUrl = API_BASE_URL.replace(/\/$/, '') + '/notification';
     const newSocket = io(socketUrl, {
       auth: {token},
       transports: ['websocket'],
