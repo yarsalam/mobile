@@ -29,7 +29,7 @@ export const NotificationSocketProvider = ({
   );
 
   useEffect(() => {
-    if (!token) return;
+    if (!user?.id || !token) return;
     const unsubscribe = notifee.onForegroundEvent(({type, detail}) => {
       if (type !== EventType.PRESS) return;
       const rawId = detail.notification?.id;
@@ -43,10 +43,10 @@ export const NotificationSocketProvider = ({
       if (navigationRef.isReady()) navigationRef.navigate('Notifications');
     });
     return unsubscribe;
-  }, [token]);
+  }, [user?.id, token]);
 
   useEffect(() => {
-    if (!token) return;
+    if (!user?.id || !token) return;
     let active = true;
     (async () => {
       const pendingId = await AsyncStorage.getItem(
@@ -68,7 +68,7 @@ export const NotificationSocketProvider = ({
     return () => {
       active = false;
     };
-  }, [token]);
+  }, [user?.id, token]);
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', nextState => {
