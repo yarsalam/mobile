@@ -11,7 +11,11 @@ import {AppInitializer} from './src/components/user/AppInitializer';
 import {Host} from 'react-native-portalize';
 import {HintTourProvider} from './src/components/hints/HintTourContext';
 import {useEffect} from 'react';
-import notifee, {AndroidImportance} from '@notifee/react-native';const App = () => {
+import notifee, {AndroidImportance} from '@notifee/react-native';
+
+const queryClient = new QueryClient();
+
+const App = () => {
   useEffect(() => {
     async function init() {
       try {
