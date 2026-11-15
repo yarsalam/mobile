@@ -36,7 +36,7 @@ export const NotificationSocketProvider = ({
       const match =
         typeof rawId === 'string' ? /^notification-(\d+)$/.exec(rawId) : null;
       if (match) {
-        void fetchWithAuth(`/notifications/click/${Number(match[1])}`, {
+        fetchWithAuth(`/notifications/click/${Number(match[1])}`, {
           method: 'POST',
         }).catch(() => undefined);
       }
@@ -104,7 +104,7 @@ export const NotificationSocketProvider = ({
     // successful initial connection and reconnect. Refresh failures must not
     // create unhandled rejections or affect realtime notification display.
     newSocket.on('connect', () => {
-      void refreshInbox();
+      refreshInbox();
     });
 
     newSocket.on(
@@ -116,7 +116,7 @@ export const NotificationSocketProvider = ({
       }) => {
         // The Socket.IO event is already authenticated and persisted by the
         // backend. Start reconciliation but do not wait for HTTP before showing it.
-        void refreshInbox();
+        refreshInbox();
 
         const notificationId = Number(notif?.id);
         if (Number.isSafeInteger(notificationId) && notificationId > 0) {
@@ -165,7 +165,7 @@ export const NotificationSocketProvider = ({
         appStateRef.current = nextState;
         if (nextState === 'active') {
           if (!newSocket.connected) newSocket.connect();
-          else void refreshInbox();
+          else refreshInbox();
         }
       },
     );
