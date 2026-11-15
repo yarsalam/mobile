@@ -12,50 +12,10 @@ import {Host} from 'react-native-portalize';
 import {HintTourProvider} from './src/components/hints/HintTourContext';
 import {useEffect} from 'react';
 import notifee, {AndroidImportance} from '@notifee/react-native';
-import BackgroundFetch from 'react-native-background-fetch';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {API_BASE_URL} from './src/config/api';
-import {getDeviceHeaders} from './src/lib/deviceInfo';
+import {decodeToken} from './src/lib/decodeToken';
 
 const queryClient = new QueryClient();
-
-async function checkNotifications() {
-  try {
-    const token = await AsyncStorage.getItem('auth_token');
-    if (!token) return;
-
-    const deviceHeaders = await getDeviceHeaders();
-    const res = await fetch(`${API_BASE_URL}/notifications/pending`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        ...deviceHeaders,
-      },
-    });
-
-    if (!res.ok) return;
-
-    const data = await res.json();
-    if (!data?.hasUnread) return;
-
-    await notifee.createChannel({
-      id: 'default_channel_v2',
-      name: 'نوتیفیکیشن‌های یارسلام',
-      importance: AndroidImportance.HIGH,
-    });
-
-    await notifee.displayNotification({
-      title: 'یارسلام',
-      body: `${Number(data.count) || 0} پیام جدید دارید`,
-      android: {
-        channelId: 'default_channel_v2',
-        pressAction: {id: 'default'},
-      },
-    });
-  } catch {
-    // Background checks should not crash app startup.
-    if (__DEV__) console.warn('[checkNotifications] request failed');
-  }
-}
 
 const App = () => {
   useEffect(() => {
@@ -67,28 +27,8 @@ const App = () => {
           name: 'نوتیفیکیشن‌های یارسلام',
           importance: AndroidImportance.HIGH,
         });
-
-        BackgroundFetch.configure(
-          {
-            minimumFetchInterval: 15,
-            stopOnTerminate: false,
-            startOnBoot: true,
-            enableHeadless: true,
-            requiredNetworkType: BackgroundFetch.NETWORK_TYPE_ANY,
-          },
-          async taskId => {
-            try {
-              await checkNotifications();
-            } finally {
-              BackgroundFetch.finish(taskId);
-            }
-          },
-          error => {
-            if (__DEV__) console.warn('[BackgroundFetch] configuration failed', error);
-          },
-        );
-      } catch (error) {
-        if (__DEV__) console.warn('[BackgroundFetch] initialization failed', error);
+      } catch {
+        if (__DEV__) console.warn('[notifications] local presentation setup failed');
       }
     }
 
@@ -101,7 +41,29 @@ const App = () => {
         <MainProvider>
           <Host>
             <HintTourProvider>
-              <NavigationContainer ref={navigationRef}>
+              <NavigationContainer
+                ref={navigationRef}
+                onReady={async () => {
+                  try {
+                    const pending = await AsyncStorage.getItem(
+                      'pending_notification_navigation',
+                    );
+                    if (pending === '1') {
+                      await AsyncStorage.removeItem(
+                        'pending_notification_navigation',
+                      );
+                      const token = await AsyncStorage.getItem('auth_token');
+                      const decoded = decodeToken(token);
+                      if (token && decoded?.temporary !== true) {
+                        navigationRef.navigate('Notifications');
+                      }
+                    }
+                  } catch {
+                    if (__DEV__) {
+                      console.warn('[notifications] could not restore tap navigation');
+                    }
+                  }
+                }}>
                 <AuthProvider>
                   <NotificationSocketProvider>
                     <ImageProvider>
