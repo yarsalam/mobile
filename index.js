@@ -1,56 +1,15 @@
 import {AppRegistry} from 'react-native';
 import App from './App';
 import {name as appName} from './app.json';
-import BackgroundFetch from 'react-native-background-fetch';
-import notifee, {AndroidImportance} from '@notifee/react-native';
+import notifee, {EventType} from '@notifee/react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {API_BASE_URL} from './src/config/api';
-import {getDeviceHeaders} from './src/lib/deviceInfo';
 
-// ✅ همون تابع — کپی کن یا از یه فایل مشترک import کن
-async function checkNotifications() {
-  try {
-    const token = await AsyncStorage.getItem('auth_token');
-    if (!token) return;
-
-    const deviceHeaders = await getDeviceHeaders();
-    const res = await fetch(`${API_BASE_URL}/notifications/pending`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        ...deviceHeaders,
-      },
-    });
-
-    if (!res.ok) return;
-    const data = await res.json();
-
-    if (data.hasUnread) {
-      await notifee.createChannel({
-        id: 'default_channel_v2',
-        name: 'نوتیفیکیشن‌های یارسلام',
-        importance: AndroidImportance.HIGH,
-      });
-
-      await notifee.displayNotification({
-        title: 'یارسلام',
-        body: `${data.count} پیام جدید دارید`,
-        android: {
-          channelId: 'default_channel_v2',
-          pressAction: {id: 'default'},
-        },
-      });
-    }
-  } catch (e) {
-    console.log('[checkNotifications] error:', e);
+// A notification tapped while the app process is being started is routed
+// after NavigationContainer becomes ready. No background polling is used.
+notifee.onBackgroundEvent(async ({type}) => {
+  if (type === EventType.PRESS) {
+    await AsyncStorage.setItem('pending_notification_navigation', '1');
   }
-}
-
-// ✅ Headless Task — فقط وقتی اپ killed است اجرا می‌شه
-const HeadlessTask = async event => {
-  await checkNotifications();
-  BackgroundFetch.finish(event.taskId);
-};
-
-BackgroundFetch.registerHeadlessTask(HeadlessTask);
+});
 
 AppRegistry.registerComponent(appName, () => App);
