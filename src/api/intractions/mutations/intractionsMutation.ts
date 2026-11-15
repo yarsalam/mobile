@@ -1,16 +1,9 @@
 import {useQuery} from '@tanstack/react-query';
-import {
-  getFeed,
-  dismissPromotion,
-  trackPromotionClick,
-  trackPromotionImpression,
-} from '../queries/intractionsApi';
+import {getFeed, dismissPromotion, trackPromotionClick} from '../queries/intractionsApi';
 import {useLikeMutation} from './useLikeMutation';
 import {useSuperLikeMutation} from './useSuperLikeMutation';
 import {usePassMutation} from './usePassMutation';
 import {useMutation, useQueryClient} from '@tanstack/react-query';
-import {useRef} from 'react';
-import {createPromotionImpressionTracker} from '../../../lib/promotionImpression';
 
 export const useFeed = (limit: number = 20) => {
   const queryClient = useQueryClient();
@@ -51,18 +44,6 @@ export const useFeed = (limit: number = 20) => {
     mutationFn: trackPromotionClick,
   });
 
-  const promotionImpressionMutation = useMutation({
-    mutationFn: trackPromotionImpression,
-  });
-
-  const promotionImpressionTrackerRef = useRef<
-    ReturnType<typeof createPromotionImpressionTracker> | null
-  >(null);
-  if (!promotionImpressionTrackerRef.current) {
-    promotionImpressionTrackerRef.current = createPromotionImpressionTracker(
-      promotionId => promotionImpressionMutation.mutateAsync(promotionId),
-    );
-  }
 
   return {
     feed,
@@ -77,7 +58,6 @@ export const useFeed = (limit: number = 20) => {
       dismissMutation.mutate(promotionId),
     handlePromotionClick: (promotionId: string) =>
       promotionClickMutation.mutateAsync(promotionId),
-    handlePromotionImpression: promotionImpressionTrackerRef.current,
     isLiking: likeMutation.isPending,
     isSuperLiking: superLikeMutation.isPending,
   };
