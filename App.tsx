@@ -43,14 +43,20 @@ const App = () => {
               <NavigationContainer
                 ref={navigationRef}
                 onReady={async () => {
-                  const pending = await AsyncStorage.getItem(
-                    'pending_notification_navigation',
-                  );
-                  if (pending === '1') {
-                    await AsyncStorage.removeItem(
+                  try {
+                    const pending = await AsyncStorage.getItem(
                       'pending_notification_navigation',
                     );
-                    navigationRef.navigate('Notifications');
+                    if (pending === '1') {
+                      await AsyncStorage.removeItem(
+                        'pending_notification_navigation',
+                      );
+                      navigationRef.navigate('Notifications');
+                    }
+                  } catch {
+                    if (__DEV__) {
+                      console.warn('[notifications] could not restore tap navigation');
+                    }
                   }
                 }}>
                 <AuthProvider>
