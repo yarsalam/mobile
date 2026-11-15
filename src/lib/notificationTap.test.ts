@@ -29,6 +29,7 @@ describe('consumePendingNotificationTap', () => {
 
     await consumePendingNotificationTap({
       storage,
+      allowNavigation: true,
       isNavigationReady: () => true,
       navigateToNotifications,
       markClicked,
@@ -39,7 +40,29 @@ describe('consumePendingNotificationTap', () => {
     expect(values.size).toBe(0);
   });
 
-  it('keeps the navigation request until React Navigation is ready', async () => {
+  it('leaves cold-start routing to NavigationContainer.onReady', async () => {
+    const {values, storage} = createStorage({
+      [PENDING_NOTIFICATION_CLICK_ID_KEY]: '24',
+      [PENDING_NOTIFICATION_NAVIGATION_KEY]: '1',
+    });
+    const navigateToNotifications = jest.fn();
+    const markClicked = jest.fn(async () => undefined);
+
+    await consumePendingNotificationTap({
+      storage,
+      allowNavigation: false,
+      isNavigationReady: () => true,
+      navigateToNotifications,
+      markClicked,
+    });
+
+    expect(navigateToNotifications).not.toHaveBeenCalled();
+    expect(markClicked).toHaveBeenCalledWith(24);
+    expect(values.get(PENDING_NOTIFICATION_NAVIGATION_KEY)).toBe('1');
+    expect(values.has(PENDING_NOTIFICATION_CLICK_ID_KEY)).toBe(false);
+  });
+
+  it('keeps the warm-resume navigation request until React Navigation is ready', async () => {
     const {values, storage} = createStorage({
       [PENDING_NOTIFICATION_CLICK_ID_KEY]: '7',
       [PENDING_NOTIFICATION_NAVIGATION_KEY]: '1',
@@ -49,6 +72,7 @@ describe('consumePendingNotificationTap', () => {
 
     await consumePendingNotificationTap({
       storage,
+      allowNavigation: true,
       isNavigationReady: () => false,
       navigateToNotifications,
       markClicked,
@@ -68,6 +92,7 @@ describe('consumePendingNotificationTap', () => {
 
     await consumePendingNotificationTap({
       storage,
+      allowNavigation: true,
       isNavigationReady: () => true,
       navigateToNotifications: jest.fn(),
       markClicked,
@@ -87,6 +112,7 @@ describe('consumePendingNotificationTap', () => {
     await expect(
       consumePendingNotificationTap({
         storage,
+        allowNavigation: true,
         isNavigationReady: () => true,
         navigateToNotifications,
         markClicked: async () => {

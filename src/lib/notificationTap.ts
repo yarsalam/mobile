@@ -10,18 +10,20 @@ export type NotificationTapStorage = {
 
 export type ConsumePendingNotificationTapOptions = {
   storage: NotificationTapStorage;
+  allowNavigation: boolean;
   isNavigationReady(): boolean;
   navigateToNotifications(): void;
   markClicked(notificationId: number): Promise<unknown>;
 };
 
 /**
- * Consume taps saved by Notifee's background handler when the app resumes.
- * Keep the navigation flag until React Navigation is ready; click attribution
- * is best-effort and is removed before the request so it cannot replay.
+ * Consume a tap saved by Notifee's background handler.
+ * NavigationContainer.onReady owns cold-start routing; the caller enables
+ * navigation only for a warm background resume to avoid duplicate routing.
  */
 export async function consumePendingNotificationTap({
   storage,
+  allowNavigation,
   isNavigationReady,
   navigateToNotifications,
   markClicked,
@@ -29,7 +31,11 @@ export async function consumePendingNotificationTap({
   const pendingNavigation = await storage.getItem(
     PENDING_NOTIFICATION_NAVIGATION_KEY,
   );
-  if (pendingNavigation === '1' && isNavigationReady()) {
+  if (
+    allowNavigation &&
+    pendingNavigation === '1' &&
+    isNavigationReady()
+  ) {
     await storage.removeItem(PENDING_NOTIFICATION_NAVIGATION_KEY);
     navigateToNotifications();
   }
@@ -40,7 +46,7 @@ export async function consumePendingNotificationTap({
   if (pendingClickId === null) return;
 
   await storage.removeItem(PENDING_NOTIFICATION_CLICK_ID_KEY);
-  if (!/^\d+$/.test(pendingClickId)) return;
+  if (!/^\\d+$/.test(pendingClickId)) return;
 
   const notificationId = Number(pendingClickId);
   if (!Number.isSafeInteger(notificationId) || notificationId <= 0) return;

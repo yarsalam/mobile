@@ -30,7 +30,9 @@ export const NotificationSocketProvider = ({
   );
   const pendingTapProcessingRef = useRef(false);
 
-  const consumeQueuedNotificationTap = useCallback(async () => {
+  const consumeQueuedNotificationTap = useCallback(async (
+    allowNavigation: boolean,
+  ) => {
     if (!user?.id || !token || pendingTapProcessingRef.current) return;
     pendingTapProcessingRef.current = true;
     try {
@@ -39,6 +41,7 @@ export const NotificationSocketProvider = ({
           getItem: key => AsyncStorage.getItem(key),
           removeItem: key => AsyncStorage.removeItem(key),
         },
+        allowNavigation,
         isNavigationReady: () => navigationRef.isReady(),
         navigateToNotifications: () => navigationRef.navigate('Notifications'),
         markClicked: notificationId =>
@@ -55,9 +58,10 @@ export const NotificationSocketProvider = ({
     }
   }, [user?.id, token]);
 
-  // Handles cold-start taps after the authenticated session has been restored.
+  // NavigationContainer.onReady handles cold-start routing; this consumes only
+  // click attribution so the two paths cannot navigate twice.
   useEffect(() => {
-    consumeQueuedNotificationTap().catch(() => undefined);
+    consumeQueuedNotificationTap(false).catch(() => undefined);
   }, [consumeQueuedNotificationTap]);
 
   useEffect(() => {
@@ -66,7 +70,7 @@ export const NotificationSocketProvider = ({
       if (type !== EventType.PRESS) return;
       const rawId = detail.notification?.id;
       const match =
-        typeof rawId === 'string' ? /^notification-(\d+)$/.exec(rawId) : null;
+        typeof rawId === 'string' ? /^notification-(\\d+)$/.exec(rawId) : null;
       if (match) {
         fetchWithAuth(`/notifications/click/${Number(match[1])}`, {
           method: 'POST',
@@ -97,7 +101,7 @@ export const NotificationSocketProvider = ({
     const refreshInbox = () =>
       refreshNotificationQueries(queryClient).catch(() => undefined);
 
-    const socketUrl = API_BASE_URL.replace(/\/$/, '') + '/notification';
+    const socketUrl = API_BASE_URL.replace(/\\/$/, '') + '/notification';
     const newSocket = io(socketUrl, {
       auth: {token},
       transports: ['websocket'],
@@ -108,12 +112,8 @@ export const NotificationSocketProvider = ({
     });
 
     // Reconcile the local cache against the server-owned inbox on every
-    // successful initial connection and reconnect. Refresh failures must not
-    // create unhandled rejections or affect realtime notification display.
-    newSocket.on('connect', () => {
-      refreshInbox();
-      consumeQueuedNotificationTap().catch(() => undefined);
-    });
+    // successful initial connection and reconnect.
+    newSocket.on('connect', refreshInbox);
 
     newSocket.on(
       'notification',
@@ -172,9 +172,9 @@ export const NotificationSocketProvider = ({
       nextState => {
         appStateRef.current = nextState;
         if (nextState === 'active') {
-          // Notifee's background handler saves a pending tap for both warm
-          // background resumes and cold starts. Consume it on warm resume too.
-          consumeQueuedNotificationTap().catch(() => undefined);
+          // A tap saved while this process was backgrounded is consumed here.
+          // Cold-start routing remains owned by NavigationContainer.onReady.
+          consumeQueuedNotificationTap(true).catch(() => undefined);
           if (!newSocket.connected) newSocket.connect();
           else refreshInbox();
         }
