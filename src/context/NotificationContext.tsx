@@ -6,6 +6,8 @@ import {useQueryClient} from '@tanstack/react-query';
 import {useToast} from './ToastContext';
 import notifee, {EventType} from '@notifee/react-native';
 import {navigationRef} from '../lib/navigationRef';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import {fetchWithAuth} from '../lib/fetchWithAuth';
 import {API_BASE_URL} from '../config/api';
 import {refreshNotificationQueries} from '../lib/notificationSync';
 
@@ -27,13 +29,44 @@ export const NotificationSocketProvider = ({
   );
 
   useEffect(() => {
-    const unsubscribe = notifee.onForegroundEvent(({type}) => {
-      if (type === EventType.PRESS && navigationRef.isReady()) {
-        navigationRef.navigate('Notifications');
+    const unsubscribe = notifee.onForegroundEvent(({type, detail}) => {
+      if (type !== EventType.PRESS) return;
+      const rawId = detail.notification?.id;
+      const match =
+        typeof rawId === 'string' ? /^notification-(\\d+)$/.exec(rawId) : null;
+      if (match) {
+        void fetchWithAuth(`/notifications/click/${Number(match[1])}`, {
+          method: 'POST',
+        }).catch(() => undefined);
       }
+      if (navigationRef.isReady()) navigationRef.navigate('Notifications');
     });
     return unsubscribe;
   }, []);
+
+  useEffect(() => {
+    if (!token) return;
+    let active = true;
+    (async () => {
+      const pendingId = await AsyncStorage.getItem(
+        'pending_notification_click_id',
+      );
+      if (!pendingId || !/^\\d+$/.test(pendingId)) return;
+      try {
+        await fetchWithAuth(`/notifications/click/${Number(pendingId)}`, {
+          method: 'POST',
+        });
+        if (active) {
+          await AsyncStorage.removeItem('pending_notification_click_id');
+        }
+      } catch {
+        // Keep the pending ID so a later authenticated launch can retry it.
+      }
+    })().catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, [token]);
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', nextState => {
