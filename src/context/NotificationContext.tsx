@@ -1,4 +1,4 @@
-import React, {createContext, useEffect, useRef, useState} from 'react';
+import React, {createContext, useCallback, useEffect, useRef, useState} from 'react';
 import {AppState, AppStateStatus} from 'react-native';
 import {io, Socket} from 'socket.io-client';
 import {useAuth} from './AuthContext';
@@ -10,6 +10,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {fetchWithAuth} from '../lib/fetchWithAuth';
 import {API_BASE_URL} from '../config/api';
 import {refreshNotificationQueries} from '../lib/notificationSync';
+import {consumePendingNotificationTap} from '../lib/notificationTap';
 
 export const NotificationSocketContext = createContext<{
   socket: Socket | null;
@@ -27,6 +28,37 @@ export const NotificationSocketProvider = ({
   const appStateRef = useRef<AppStateStatus>(
     AppState.currentState as AppStateStatus,
   );
+  const pendingTapProcessingRef = useRef(false);
+
+  const consumeQueuedNotificationTap = useCallback(async () => {
+    if (!user?.id || !token || pendingTapProcessingRef.current) return;
+    pendingTapProcessingRef.current = true;
+    try {
+      await consumePendingNotificationTap({
+        storage: {
+          getItem: key => AsyncStorage.getItem(key),
+          removeItem: key => AsyncStorage.removeItem(key),
+        },
+        isNavigationReady: () => navigationRef.isReady(),
+        navigateToNotifications: () => navigationRef.navigate('Notifications'),
+        markClicked: notificationId =>
+          fetchWithAuth(`/notifications/click/${notificationId}`, {
+            method: 'POST',
+          }),
+      });
+    } catch {
+      if (__DEV__) {
+        console.warn('[notifications] could not consume pending notification tap');
+      }
+    } finally {
+      pendingTapProcessingRef.current = false;
+    }
+  }, [user?.id, token]);
+
+  // Handles cold-start taps after the authenticated session has been restored.
+  useEffect(() => {
+    consumeQueuedNotificationTap().catch(() => undefined);
+  }, [consumeQueuedNotificationTap]);
 
   useEffect(() => {
     if (!user?.id || !token) return;
@@ -34,7 +66,7 @@ export const NotificationSocketProvider = ({
       if (type !== EventType.PRESS) return;
       const rawId = detail.notification?.id;
       const match =
-        typeof rawId === 'string' ? /^notification-(\d+)$/.exec(rawId) : null;
+        typeof rawId === 'string' ? /^notification-(\\d+)$/.exec(rawId) : null;
       if (match) {
         fetchWithAuth(`/notifications/click/${Number(match[1])}`, {
           method: 'POST',
@@ -43,31 +75,6 @@ export const NotificationSocketProvider = ({
       if (navigationRef.isReady()) navigationRef.navigate('Notifications');
     });
     return unsubscribe;
-  }, [user?.id, token]);
-
-  useEffect(() => {
-    if (!user?.id || !token) return;
-    let active = true;
-    (async () => {
-      const pendingId = await AsyncStorage.getItem(
-        'pending_notification_click_id',
-      );
-      if (!pendingId || !/^\d+$/.test(pendingId)) return;
-      try {
-        await fetchWithAuth(`/notifications/click/${Number(pendingId)}`, {
-          method: 'POST',
-        });
-      } catch {
-        // Click analytics is best-effort; never replay an old user's ID.
-      } finally {
-        if (active) {
-          await AsyncStorage.removeItem('pending_notification_click_id');
-        }
-      }
-    })().catch(() => undefined);
-    return () => {
-      active = false;
-    };
   }, [user?.id, token]);
 
   useEffect(() => {
@@ -90,7 +97,7 @@ export const NotificationSocketProvider = ({
     const refreshInbox = () =>
       refreshNotificationQueries(queryClient).catch(() => undefined);
 
-    const socketUrl = API_BASE_URL.replace(/\/$/, '') + '/notification';
+    const socketUrl = API_BASE_URL.replace(/\\/$/, '') + '/notification';
     const newSocket = io(socketUrl, {
       auth: {token},
       transports: ['websocket'],
@@ -105,6 +112,7 @@ export const NotificationSocketProvider = ({
     // create unhandled rejections or affect realtime notification display.
     newSocket.on('connect', () => {
       refreshInbox();
+      consumeQueuedNotificationTap().catch(() => undefined);
     });
 
     newSocket.on(
@@ -164,6 +172,9 @@ export const NotificationSocketProvider = ({
       nextState => {
         appStateRef.current = nextState;
         if (nextState === 'active') {
+          // Notifee's background handler saves a pending tap for both warm
+          // background resumes and cold starts. Consume it on warm resume too.
+          consumeQueuedNotificationTap().catch(() => undefined);
           if (!newSocket.connected) newSocket.connect();
           else refreshInbox();
         }
@@ -177,7 +188,7 @@ export const NotificationSocketProvider = ({
       newSocket.disconnect();
       setSocket(current => (current === newSocket ? null : current));
     };
-  }, [user?.id, token, queryClient, showToast]);
+  }, [user?.id, token, queryClient, showToast, consumeQueuedNotificationTap]);
 
   return (
     <NotificationSocketContext.Provider value={{socket}}>
