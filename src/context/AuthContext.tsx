@@ -47,8 +47,8 @@ async function syncAuthenticatedDevice(token: string): Promise<void> {
     if (!response.ok && __DEV__) {
       console.warn('[device-sync] metadata update rejected:', response.status);
     }
-  } catch (error) {
-    // Device metadata is best-effort and must never block a valid login.
+  } catch {
+    // Device metadata is best-effort and must never block authentication.
     if (__DEV__) console.warn('[device-sync] metadata update failed');
   }
 }
@@ -107,6 +107,13 @@ export const AuthProvider = ({children}: {children: React.ReactNode}) => {
 
   const isAuthenticated = Boolean(isPermanent && user);
 
+  // Run after /auth/me succeeds so this covers both a fresh login and a
+  // previously stored session restored after an app restart or upgrade.
+  useEffect(() => {
+    if (!isAuthenticated || !token) return;
+    void syncAuthenticatedDevice(token);
+  }, [isAuthenticated, token]);
+
   const setToken = useCallback(
     async (newToken: string | null) => {
       if (!newToken) {
@@ -131,7 +138,6 @@ export const AuthProvider = ({children}: {children: React.ReactNode}) => {
           queryFn: () => fetchWithAuth(`${API_BASE_URL}/auth/me`),
           retry: false,
         });
-        await syncAuthenticatedDevice(newToken);
       } catch {
         await AsyncStorage.removeItem('auth_token');
         setTokenState(null);
