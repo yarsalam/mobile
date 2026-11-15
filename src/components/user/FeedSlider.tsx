@@ -8,6 +8,7 @@ import LoadingWrapper from '../LoadingWrapper';
 import {useHintTour} from '../hints/HintTourContext';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {RootStackParamList} from '../../../types/rootStackParamList';
+import {trackPromotionClickInBackground} from '../../lib/promotionAnalytics';
 
 const {width} = Dimensions.get('window');
 const CARD_MARGIN = 12;
@@ -75,7 +76,7 @@ const FeedSlider = () => {
     const promotionId = String(item.id);
 
     // Analytics is fire-and-forget; it must not delay user navigation.
-    void handlePromotionClick(promotionId).catch(() => undefined);
+    trackPromotionClickInBackground(handlePromotionClick, promotionId);
 
     const requestedTarget = item.data.navigationTarget;
     // Backend legacy promotion templates still name the old "Payment" and
