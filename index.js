@@ -11,7 +11,7 @@ notifee.onBackgroundEvent(async ({type, detail}) => {
   try {
     const rawId = detail.notification?.id;
     const match =
-      typeof rawId === 'string' ? /^notification-(\\d+)$/.exec(rawId) : null;
+      typeof rawId === 'string' ? /^notification-(\d+)$/.exec(rawId) : null;
     if (match) {
       await AsyncStorage.setItem('pending_notification_click_id', match[1]);
     }
