@@ -52,7 +52,11 @@ const App = () => {
                       await AsyncStorage.removeItem(
                         'pending_notification_navigation',
                       );
-                      navigationRef.navigate('Notifications');
+                      const token = await AsyncStorage.getItem('auth_token');
+                      const decoded = decodeToken(token);
+                      if (token && decoded?.temporary !== true) {
+                        navigationRef.navigate('Notifications');
+                      }
                     }
                   } catch {
                     if (__DEV__) {
