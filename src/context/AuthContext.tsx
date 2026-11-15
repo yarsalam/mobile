@@ -111,7 +111,7 @@ export const AuthProvider = ({children}: {children: React.ReactNode}) => {
   // previously stored session restored after an app restart or upgrade.
   useEffect(() => {
     if (!isAuthenticated || !token) return;
-    void syncAuthenticatedDevice(token);
+    syncAuthenticatedDevice(token).catch(() => undefined);
   }, [isAuthenticated, token]);
 
   const setToken = useCallback(
