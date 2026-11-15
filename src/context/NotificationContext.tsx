@@ -4,7 +4,8 @@ import {io, Socket} from 'socket.io-client';
 import {useAuth} from './AuthContext';
 import {useQueryClient} from '@tanstack/react-query';
 import {useToast} from './ToastContext';
-import notifee from '@notifee/react-native';
+import notifee, {EventType} from '@notifee/react-native';
+import {navigationRef} from '../lib/navigationRef';
 import {API_BASE_URL} from '../config/api';
 import {refreshNotificationQueries} from '../lib/notificationSync';
 
@@ -24,6 +25,15 @@ export const NotificationSocketProvider = ({
   const appStateRef = useRef<AppStateStatus>(
     AppState.currentState as AppStateStatus,
   );
+
+  useEffect(() => {
+    const unsubscribe = notifee.onForegroundEvent(({type}) => {
+      if (type === EventType.PRESS && navigationRef.isReady()) {
+        navigationRef.navigate('Notifications');
+      }
+    });
+    return unsubscribe;
+  }, []);
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', nextState => {
