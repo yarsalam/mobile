@@ -30,6 +30,8 @@ const PromotionCard: React.FC<PromotionCardProps> = ({data, onPress, onDismiss})
         return '👑';
       case 'credit':
         return '💰';
+      case 'manual_discount':
+        return '🏷️';
       default:
         return '✨';
     }

@@ -62,6 +62,27 @@ describe('buyWithWallet idempotency', () => {
     );
   });
 
+  it('sends the manual campaign ID together with automatic promotion attribution', async () => {
+    mockedFetch.mockResolvedValueOnce({success: true} as any);
+
+    await buyWithWallet({
+      bundleCode: 'vip-month',
+      userId: 42,
+      promotionId: 'promo-0123456789abcdef',
+      manualPromotionId: '11111111-1111-4111-8111-111111111111',
+    });
+
+    expect(mockedFetch).toHaveBeenCalledWith(
+      '/payments/buy/vip-month',
+      expect.objectContaining({
+        body: JSON.stringify({
+          promotionId: 'promo-0123456789abcdef',
+          manualPromotionId: '11111111-1111-4111-8111-111111111111',
+        }),
+      }),
+    );
+  });
+
   it('reuses the same key after a network failure and a retry', async () => {
     mockedFetch
       .mockRejectedValueOnce(new Error('network unavailable'))
