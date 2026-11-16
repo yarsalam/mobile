@@ -2,6 +2,7 @@ import React from 'react';
 import {useRoute} from '@react-navigation/native';
 import type {RouteProp} from '@react-navigation/native';
 import type {RootStackParamList} from '../../types/rootStackParamList';
+import type {ProductOption} from '../../types/productsType';
 import { ScrollView } from 'react-native';
 import GlobalText from '../components/GlobalText';
 import { usePublicProducts } from '../api/mutations/product/useProducts';
@@ -29,7 +30,7 @@ const Products = () => {
     <MainLayout>
       <SectionWithLine text="فروشگاه" />
       <ScrollView contentContainerStyle={{ padding: 16 }}>
-        {(!campaignFlow || boostOptions.some(option => option.id === manualBundleCode)) && <ProductCard
+        {(!campaignFlow || boostOptions.some((option: ProductOption) => option.id === manualBundleCode)) && <ProductCard
           title="Boost"
           description="پروفایلت رو برای ۳۰ دقیقه به همه نشون بده و شانس مچ شدن رو چند برابر کن!"
           icon="🚀"
@@ -38,7 +39,7 @@ const Products = () => {
           manualPromotionId={manualPromotionId}
           manualBundleCode={manualBundleCode}
         />}
-        {(!campaignFlow || creditOptions.some(option => option.id === manualBundleCode)) && <ProductCard
+        {(!campaignFlow || creditOptions.some((option: ProductOption) => option.id === manualBundleCode)) && <ProductCard
           title="Credits"
           description="با اعتبار می‌تونی پیام بفرستی، ویو کنی یا سوپرلایک بزنی بدون محدودیت"
           icon="🔋"
@@ -47,7 +48,7 @@ const Products = () => {
           manualPromotionId={manualPromotionId}
           manualBundleCode={manualBundleCode}
         />}
-        {(!campaignFlow || vipOptions.some(option => option.id === manualBundleCode)) && <ProductCard
+        {(!campaignFlow || vipOptions.some((option: ProductOption) => option.id === manualBundleCode)) && <ProductCard
           title="VIP"
           description="پیام نامحدود، ویو نامحدود، بدون نیاز به اعتبار، بوست ماهانه رایگان، اولویت نمایش"
           icon="⭐"
@@ -58,7 +59,7 @@ const Products = () => {
         />}
         {campaignFlow &&
           ![...boostOptions, ...creditOptions, ...vipOptions].some(
-            (option) => option.id === manualBundleCode,
+            (option: ProductOption) => option.id === manualBundleCode,
           ) && (
             <GlobalText style={{textAlign: 'center', margin: 16, color: '#dc2626'}}>
               بسته مشمول این تخفیف دیگر در فروشگاه فعال نیست.
