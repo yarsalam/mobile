@@ -54,6 +54,9 @@ jobs:
           node scripts/check-mobile-dependency-audit.cjs security-report/npm-audit-production.json package-lock.json
       - name: Type-check the React Native application
         run: npx tsc --noEmit
+      - name: Lint wallet checkout changes (blocking)
+        run: npx eslint src/api/mutations/payment/useBuyWithWallet.ts src/api/mutations/payment/useBuyWithWallet.test.ts src/api/mutations/product/useManualPromotionQuote.ts src/api/queries/aiAssistant.ts src/api/queries/aiAssistant.test.ts src/api/mutations/assistant/aiAssistantHooks.ts src/components/products/ProductCard.tsx src/components/BasketScreen.tsx src/pages/payment/Basket.tsx types/rootStackParamList.ts src/pages/messages/ChatScreen.tsx src/lib/useModeratedSend.ts src/lib/moderationDecision.ts src/lib/moderationDecision.test.ts src/lib/requestReplySuggestionConsent.ts src/lib/requestReplySuggestionConsent.test.ts src/api/queries/messages.ts src/api/queries/messages.test.ts src/api/mutations/messages/useSendMessage.ts src/api/mutations/useModerationCheck.ts src/api/mutations/personality/useTextPersonality.ts src/api/mutations/personality/useTextPersonality.test.ts src/components/personality/TextPersonalityAnalysisCard.tsx src/pages/assistant/AiAdvice.tsx src/pages/AccountActionsScreen.tsx
+
       - name: Run full Jest suite
         run: npm test -- --runInBand --passWithNoTests
       - name: Validate and apply API URL
