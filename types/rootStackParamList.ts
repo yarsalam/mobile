@@ -7,7 +7,7 @@ export type RootStackParamList = {
   TelegramActivation: undefined;
   WhatsAppActivation: undefined;
   Welcome: undefined;
-  Products: {type?: string; promotionId?: string} | undefined;
+  Products: {type?: string; promotionId?: string; manualPromotionId?: string; bundleCode?: string} | undefined;
   multiStepProfile: undefined;
   UserPanel: undefined;
   EditImg: undefined;
@@ -42,5 +42,7 @@ export type RootStackParamList = {
     amountRials: number;
     productLabel: string;
     bundleCode?: string;
+    manualPromotionId?: string;
+    promotionId?: string;
   };
 };

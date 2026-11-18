@@ -10,6 +10,7 @@ import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import type {RootStackParamList} from '../../../types/rootStackParamList';
 import {useWallet} from '../../api/queries/useWallet';
 import {useBuyWithWallet} from '../../api/mutations/payment/useBuyWithWallet';
+import {useManualPromotionQuote} from '../../api/mutations/product/useManualPromotionQuote';
 
 interface Props {
   title: string;
@@ -17,6 +18,8 @@ interface Props {
   icon: string;
   options: ProductOption[];
   promotionId?: string;
+  manualPromotionId?: string;
+  manualBundleCode?: string;
 }
 
 export default function ProductCard({
@@ -25,6 +28,8 @@ export default function ProductCard({
   icon,
   options,
   promotionId,
+  manualPromotionId,
+  manualBundleCode,
 }: Props) {
   const {theme} = useTheme();
   const styles = getStyles(theme);
@@ -35,13 +40,48 @@ export default function ProductCard({
 
   const {data: wallet} = useWallet();
   const buyMutation = useBuyWithWallet();
+  const manualOfferInThisCard = Boolean(
+    manualPromotionId &&
+    manualBundleCode &&
+    options.some(option => option.id === manualBundleCode),
+  );
+  const manualQuoteQuery = useManualPromotionQuote(
+    manualPromotionId,
+    manualBundleCode,
+    manualOfferInThisCard,
+  );
+  const baseManualOption = options.find(option => option.id === manualBundleCode);
+  const manualQuote = manualQuoteQuery.data &&
+    manualQuoteQuery.data.campaignId === manualPromotionId &&
+    manualQuoteQuery.data.bundleCode === manualBundleCode &&
+    manualQuoteQuery.data.basePriceRials === baseManualOption?.price &&
+    Number.isSafeInteger(manualQuoteQuery.data.payablePriceRials) &&
+    manualQuoteQuery.data.payablePriceRials > 0 &&
+    manualQuoteQuery.data.payablePriceRials < manualQuoteQuery.data.basePriceRials
+      ? manualQuoteQuery.data
+      : null;
 
+  const selectedManualTarget = Boolean(
+    manualPromotionId && selected?.id === manualBundleCode,
+  );
   const walletBalance = Number(wallet?.balance ?? 0); // ریال
-  const selectedPrice = selected?.price ?? 0; // ریال
-  const canAfford = walletBalance >= selectedPrice;
+  const selectedPrice = selectedManualTarget
+    ? (manualQuote?.payablePriceRials ?? 0)
+    : (selected?.price ?? 0); // ریال
+  const canAfford = selectedPrice > 0 && walletBalance >= selectedPrice;
+  const quotePending = selectedManualTarget &&
+    (manualQuoteQuery.isLoading || manualQuoteQuery.isFetching) &&
+    !manualQuote;
+  const quoteUnavailable = selectedManualTarget &&
+    (manualQuoteQuery.isError || !manualQuote) &&
+    !quotePending;
 
   const handleBuy = () => {
     if (!selected) return;
+    if (selectedManualTarget && !manualQuote) {
+      Alert.alert('تخفیف در دسترس نیست', 'اعتبار این پیشنهاد قابل تأیید نیست؛ خرید با تخفیف متوقف شد. دوباره وارد فروشگاه شوید.');
+      return;
+    }
 
     if (canAfford) {
       setShowConfirm(true);
@@ -53,6 +93,7 @@ export default function ProductCard({
           amountRials: selectedPrice - walletBalance, // کمبود دقیق
           productLabel: `${title} — ${selected.label}`,
           bundleCode: selected.id,
+          ...(selectedManualTarget && manualPromotionId ? {manualPromotionId} : {}),
         },
       );
     }
@@ -65,12 +106,18 @@ export default function ProductCard({
       return;
     }
 
+    if (selectedManualTarget && !manualQuote) {
+      Alert.alert('تخفیف در دسترس نیست', 'قبل از خرید باید قیمت معتبر از سرور دریافت شود.');
+      return;
+    }
+
     setShowConfirm(false);
     try {
       await buyMutation.mutateAsync({
         bundleCode: String(selected.id),
         userId: Number(user.id),
         ...(promotionId ? {promotionId} : {}),
+        ...(selectedManualTarget && manualPromotionId ? {manualPromotionId} : {}),
       });
       Alert.alert('✅ موفق', `${title} با موفقیت فعال شد!`);
     } catch (err: any) {
@@ -90,8 +137,17 @@ export default function ProductCard({
       </GlobalText>
       <GlobalText style={styles.desc}>{description}</GlobalText>
 
+      {manualPromotionId && manualOfferInThisCard && (
+        <GlobalText style={{textAlign: 'center', marginBottom: 10, color: theme.colors.primary, fontWeight: 'bold'}}>
+          تخفیف ویژه برای همین بسته؛ قیمت نهایی توسط سرور تأیید می‌شود.
+        </GlobalText>
+      )}
+
       <View style={styles.options}>
-        {options.map(option => (
+        {(manualPromotionId
+          ? (manualOfferInThisCard ? options.filter(option => option.id === manualBundleCode) : [])
+          : options
+        ).map(option => (
           <TouchableOpacity
             key={option.id}
             style={[
@@ -99,13 +155,40 @@ export default function ProductCard({
               selected?.id === option.id && styles.optionActive,
             ]}
             onPress={() => setSelected(option)}>
-            <GlobalText style={styles.optionPrice}>
-              {(option.price / 10).toLocaleString('fa-IR')} تومان
-            </GlobalText>
+            <View style={{alignItems: 'flex-end'}}>
+              {manualQuote && option.id === manualBundleCode ? (
+                <>
+                  <GlobalText style={{fontSize: 11, color: theme.colors.text, opacity: 0.55, textDecorationLine: 'line-through'}}>
+                    {(manualQuote.basePriceRials / 10).toLocaleString('fa-IR')} تومان
+                  </GlobalText>
+                  <GlobalText style={[styles.optionPrice, {color: '#16a34a', fontWeight: 'bold'}]}>
+                    {(manualQuote.payablePriceRials / 10).toLocaleString('fa-IR')} تومان
+                  </GlobalText>
+                  <GlobalText style={{fontSize: 10, color: '#16a34a'}}>
+                    تخفیف {(manualQuote.discountRials / 10).toLocaleString('fa-IR')} تومان
+                  </GlobalText>
+                </>
+              ) : (
+                <GlobalText style={styles.optionPrice}>
+                  {(option.price / 10).toLocaleString('fa-IR')} تومان
+                </GlobalText>
+              )}
+            </View>
             <GlobalText style={styles.optionLabel}>{option.label}</GlobalText>
           </TouchableOpacity>
         ))}
       </View>
+
+      {selectedManualTarget && quotePending && (
+        <GlobalText style={{textAlign: 'center', color: theme.colors.text, marginBottom: 10}}>
+          در حال بررسی اعتبار و قیمت نهایی تخفیف...
+        </GlobalText>
+      )}
+      {selectedManualTarget && quoteUnavailable && (
+        <GlobalText style={{textAlign: 'center', color: '#dc2626', marginBottom: 10}}>
+          این تخفیف منقضی شده یا دیگر برای خرید شما معتبر نیست؛ خرید با این پیشنهاد متوقف شد.
+        </GlobalText>
+      )}
 
       {/* نمایش وضعیت موجودی */}
       {selected && (
@@ -131,6 +214,8 @@ export default function ProductCard({
         label={
           buyMutation.isPending
             ? 'در حال پردازش...'
+            : quotePending
+            ? 'در حال بررسی تخفیف...'
             : !selected
             ? 'انتخاب کنید'
             : canAfford
@@ -139,7 +224,7 @@ export default function ProductCard({
         }
         onPress={handleBuy}
         gradient
-        disabled={!selected || buyMutation.isPending}
+        disabled={!selected || buyMutation.isPending || quotePending || quoteUnavailable || (selectedManualTarget && !manualQuote)}
       />
 
       {/* Modal تأیید خرید */}
@@ -156,9 +241,19 @@ export default function ProductCard({
             <GlobalText style={styles.modalProduct}>
               {title} — {selected?.label}
             </GlobalText>
+            {selectedManualTarget && manualQuote && (
+              <GlobalText style={{fontSize: 13, color: theme.colors.text, textDecorationLine: 'line-through'}}>
+                {(manualQuote.basePriceRials / 10).toLocaleString('fa-IR')} تومان
+              </GlobalText>
+            )}
             <GlobalText style={styles.modalPrice}>
-              {((selected?.price ?? 0) / 10).toLocaleString('fa-IR')} تومان
+              {(selectedPrice / 10).toLocaleString('fa-IR')} تومان
             </GlobalText>
+            {selectedManualTarget && manualQuote && (
+              <GlobalText style={{fontSize: 12, color: '#16a34a', fontWeight: 'bold'}}>
+                مبلغ تخفیف: {(manualQuote.discountRials / 10).toLocaleString('fa-IR')} تومان
+              </GlobalText>
+            )}
             <GlobalText style={styles.modalAfter}>
               موجودی پس از خرید:{' '}
               {((walletBalance - selectedPrice) / 10).toLocaleString('fa-IR')}{' '}

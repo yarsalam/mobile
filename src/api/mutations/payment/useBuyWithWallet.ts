@@ -6,6 +6,7 @@ export interface WalletPurchaseInput {
   bundleCode: string;
   userId: number;
   promotionId?: string;
+  manualPromotionId?: string;
 }
 
 const pendingKey = (userId: number, bundleCode: string) =>
@@ -21,7 +22,7 @@ const createIdempotencyKey = () =>
  */
 const inFlightWalletCheckouts = new Map<string, Promise<unknown>>();
 
-async function performWalletPurchase({bundleCode, userId, promotionId}: WalletPurchaseInput) {
+async function performWalletPurchase({bundleCode, userId, promotionId, manualPromotionId}: WalletPurchaseInput) {
   const storageKey = pendingKey(userId, bundleCode);
   let idempotencyKey = await AsyncStorage.getItem(storageKey);
 
@@ -36,7 +37,10 @@ async function performWalletPurchase({bundleCode, userId, promotionId}: WalletPu
       {
         method: 'POST',
         headers: {'Idempotency-Key': idempotencyKey},
-        body: JSON.stringify(promotionId ? {promotionId} : {}),
+        body: JSON.stringify({
+          ...(promotionId ? {promotionId} : {}),
+          ...(manualPromotionId ? {manualPromotionId} : {}),
+        }),
       },
     );
 
