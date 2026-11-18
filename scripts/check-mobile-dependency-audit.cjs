@@ -11,6 +11,16 @@ const report = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
 const lock = JSON.parse(fs.readFileSync(lockPath, 'utf8'));
 const vulnerabilities = report.vulnerabilities || {};
 const counts = (report.metadata && report.metadata.vulnerabilities) || {};
+if (!report.metadata || !report.metadata.vulnerabilities || !report.vulnerabilities) {
+  console.error('Blocking: npm audit did not return a complete vulnerability report.');
+  process.exit(1);
+}
+const actualHigh = Object.values(vulnerabilities).filter((item) => item.severity === 'high').length;
+const actualCritical = Object.values(vulnerabilities).filter((item) => item.severity === 'critical').length;
+if (actualHigh !== (counts.high || 0) || actualCritical !== (counts.critical || 0)) {
+  console.error('Blocking: npm audit summary counts do not match the detailed vulnerability entries.');
+  process.exit(1);
+}
 const ALLOWED_ADVISORY = 'https://github.com/advisories/GHSA-fc5q-39xc-vjpf';
 const ALLOWED_HIGH_PACKAGES = new Set([
   '@react-native-community/cli','@react-native-community/cli-clean','@react-native-community/cli-config',
