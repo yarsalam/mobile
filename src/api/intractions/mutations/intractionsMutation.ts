@@ -44,6 +44,7 @@ export const useFeed = (limit: number = 20) => {
     mutationFn: trackPromotionClick,
   });
 
+
   return {
     feed,
     isLoading,

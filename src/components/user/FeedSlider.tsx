@@ -8,6 +8,7 @@ import LoadingWrapper from '../LoadingWrapper';
 import {useHintTour} from '../hints/HintTourContext';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {RootStackParamList} from '../../../types/rootStackParamList';
+import {trackPromotionClickInBackground} from '../../lib/promotionAnalytics';
 
 const {width} = Dimensions.get('window');
 const CARD_MARGIN = 12;
@@ -68,16 +69,14 @@ const FeedSlider = () => {
     currentIndexRef.current = newIndex;
     isInteractingRef.current = false;
   };
+
   // ────────────────────
 
-  const handlePromotionPress = async (item: any) => {
-    // Track the exact feed promotion before leaving the feed. Navigation must
-    // remain available even if analytics is temporarily unavailable.
-    try {
-      await handlePromotionClick(String(item.id));
-    } catch {
-      // The backend reports delivery/attribution failures through its own logs.
-    }
+  const handlePromotionPress = (item: any) => {
+    const promotionId = String(item.id);
+
+    // Analytics is fire-and-forget; it must not delay user navigation.
+    trackPromotionClickInBackground(handlePromotionClick, promotionId);
 
     const requestedTarget = item.data.navigationTarget;
     // Backend legacy promotion templates still name the old "Payment" and

@@ -40,6 +40,7 @@ describe('buyWithWallet idempotency', () => {
       '/payments/buy/vip-month',
       expect.objectContaining({
         method: 'POST',
+        body: JSON.stringify({}),
         headers: expect.objectContaining({
           'Idempotency-Key': expect.stringMatching(/^ys-wallet-/),
         }),
@@ -47,6 +48,17 @@ describe('buyWithWallet idempotency', () => {
     );
     expect(AsyncStorage.removeItem).toHaveBeenCalledWith(
       'yarsalam:pending-wallet-checkout:42:vip-month',
+    );
+  });
+
+  it('sends the originating promotion ID with the wallet checkout', async () => {
+    mockedFetch.mockResolvedValueOnce({success: true} as any);
+
+    await buyWithWallet({bundleCode: 'vip-month', userId: 42, promotionId: 'promo-0123456789abcdef'});
+
+    expect(mockedFetch).toHaveBeenCalledWith(
+      '/payments/buy/vip-month',
+      expect.objectContaining({body: JSON.stringify({promotionId: 'promo-0123456789abcdef'})}),
     );
   });
 
