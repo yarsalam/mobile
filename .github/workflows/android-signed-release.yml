@@ -28,9 +28,6 @@ jobs:
     env:
       API_BASE_URL: ${{ inputs.api_base_url }}
       ANDROID_RELEASE_STORE_FILE: ${{ runner.temp }}/yarsalam-release.keystore
-      ANDROID_RELEASE_STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-      ANDROID_RELEASE_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-      ANDROID_RELEASE_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
     steps:
       - uses: actions/checkout@v5
         with:
@@ -48,20 +45,20 @@ jobs:
           packages: platform-tools
       - name: Install Android SDK packages
         run: sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0" "ndk;27.1.12297006"
-      - name: Validate private signing secrets and materialize keystore
-        env:
-          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-        run: |
-          set -euo pipefail
-          test -n "$ANDROID_KEYSTORE_BASE64" || { echo "::error::Missing ANDROID_KEYSTORE_BASE64 secret"; exit 1; }
-          test -n "$ANDROID_RELEASE_STORE_PASSWORD" || { echo "::error::Missing ANDROID_KEYSTORE_PASSWORD secret"; exit 1; }
-          test -n "$ANDROID_RELEASE_KEY_ALIAS" || { echo "::error::Missing ANDROID_KEY_ALIAS secret"; exit 1; }
-          test -n "$ANDROID_RELEASE_KEY_PASSWORD" || { echo "::error::Missing ANDROID_KEY_PASSWORD secret"; exit 1; }
-          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$ANDROID_RELEASE_STORE_FILE"
-          test -s "$ANDROID_RELEASE_STORE_FILE"
-          chmod 600 "$ANDROID_RELEASE_STORE_FILE"
       - name: Install locked JavaScript dependencies
         run: npm ci
+      - name: Audit mobile npm dependency graph
+        run: |
+          mkdir -p security-report
+          npm audit --omit=dev --json > security-report/npm-audit-production.json || true
+          node scripts/check-mobile-dependency-audit.cjs security-report/npm-audit-production.json package-lock.json
+      - name: Type-check the React Native application
+        run: npx tsc --noEmit
+      - name: Lint wallet checkout changes (blocking)
+        run: npx eslint src/api/mutations/payment/useBuyWithWallet.ts src/api/mutations/payment/useBuyWithWallet.test.ts src/api/mutations/product/useManualPromotionQuote.ts src/api/queries/aiAssistant.ts src/api/queries/aiAssistant.test.ts src/api/mutations/assistant/aiAssistantHooks.ts src/components/products/ProductCard.tsx src/components/BasketScreen.tsx src/pages/payment/Basket.tsx types/rootStackParamList.ts src/pages/messages/ChatScreen.tsx src/lib/useModeratedSend.ts src/lib/moderationDecision.ts src/lib/moderationDecision.test.ts src/lib/requestReplySuggestionConsent.ts src/lib/requestReplySuggestionConsent.test.ts src/api/queries/messages.ts src/api/queries/messages.test.ts src/api/mutations/messages/useSendMessage.ts src/api/mutations/useModerationCheck.ts src/api/mutations/personality/useTextPersonality.ts src/api/mutations/personality/useTextPersonality.test.ts src/components/personality/TextPersonalityAnalysisCard.tsx src/pages/assistant/AiAdvice.tsx src/pages/AccountActionsScreen.tsx
+
+      - name: Run full Jest suite
+        run: npm test -- --runInBand --passWithNoTests
       - name: Validate and apply API URL
         run: |
           python3 - <<'PY'
@@ -96,8 +93,27 @@ jobs:
           lines[matches[0]] = "export const API_BASE_URL = " + repr(value) + ";"
           path.write_text(chr(10).join(lines) + chr(10))
           PY
+      - name: Validate private signing secrets and materialize keystore
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_RELEASE_STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_RELEASE_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_RELEASE_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          test -n "$ANDROID_KEYSTORE_BASE64" || { echo "::error::Missing ANDROID_KEYSTORE_BASE64 secret"; exit 1; }
+          test -n "$ANDROID_RELEASE_STORE_PASSWORD" || { echo "::error::Missing ANDROID_KEYSTORE_PASSWORD secret"; exit 1; }
+          test -n "$ANDROID_RELEASE_KEY_ALIAS" || { echo "::error::Missing ANDROID_KEY_ALIAS secret"; exit 1; }
+          test -n "$ANDROID_RELEASE_KEY_PASSWORD" || { echo "::error::Missing ANDROID_KEY_PASSWORD secret"; exit 1; }
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$ANDROID_RELEASE_STORE_FILE"
+          test -s "$ANDROID_RELEASE_STORE_FILE"
+          chmod 600 "$ANDROID_RELEASE_STORE_FILE"
       - name: Build signed production APKs
         working-directory: android
+        env:
+          ANDROID_RELEASE_STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_RELEASE_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_RELEASE_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: ./gradlew --no-daemon --stacktrace assembleRelease
       - name: Verify APK signatures and prepare checksums
         run: |

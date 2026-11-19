@@ -97,30 +97,27 @@ jobs:
       - name: Install locked JavaScript dependencies
         run: npm ci
 
-      - name: Audit mobile production dependencies
+      - name: Audit mobile npm dependency graph
         id: mobile-audit
         shell: bash
         run: |
           mkdir -p security-report
           npm audit --omit=dev --json > security-report/npm-audit-production.json || true
-          node <<'NODE'
+          node scripts/check-mobile-dependency-audit.cjs security-report/npm-audit-production.json package-lock.json
+          node - <<'NODE'
           const fs = require('node:fs');
           const report = JSON.parse(fs.readFileSync('security-report/npm-audit-production.json', 'utf8'));
           const counts = report.metadata?.vulnerabilities ?? {};
           const summary = [
-            '## Mobile production dependency audit',
+            '## Mobile npm dependency audit (APK build graph)',
             '',
             '| Severity | Count |',
             '|---|---:|',
-            ...['critical','high','moderate','low','info'].map(k => `| ${k} | ${counts[k] ?? 0} |`),
+            ...['critical','high','moderate','low','info'].map(k => '| ' + k + ' | ' + (counts[k] ?? 0) + ' |'),
             '',
-            `Total: ${counts.total ?? 0}`
+            'High findings are accepted only by the checked-in build-toolchain policy; all unknown high/critical findings fail.'
           ].join(String.fromCharCode(10));
           fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary);
-          if ((counts.critical ?? 0) > 0 || (counts.high ?? 0) > 0) {
-            console.error(`Blocking release build: ${counts.critical ?? 0} critical and ${counts.high ?? 0} high production dependency vulnerabilities remain.`);
-            process.exit(1);
-          }
           NODE
       - name: Upload mobile dependency audit report
         if: always()
