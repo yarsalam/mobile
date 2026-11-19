@@ -27,7 +27,6 @@ jobs:
     timeout-minutes: 60
     env:
       API_BASE_URL: ${{ inputs.api_base_url }}
-      ANDROID_RELEASE_STORE_FILE: ${{ runner.temp }}/yarsalam-release.keystore
     steps:
       - uses: actions/checkout@v5
         with:
@@ -99,6 +98,7 @@ jobs:
           ANDROID_RELEASE_STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_RELEASE_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_RELEASE_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_RELEASE_STORE_FILE: ${{ runner.temp }}/yarsalam-release.keystore
         run: |
           set -euo pipefail
           test -n "$ANDROID_KEYSTORE_BASE64" || { echo "::error::Missing ANDROID_KEYSTORE_BASE64 secret"; exit 1; }
