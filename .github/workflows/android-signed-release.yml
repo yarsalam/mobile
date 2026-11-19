@@ -27,7 +27,6 @@ jobs:
     timeout-minutes: 60
     env:
       API_BASE_URL: ${{ inputs.api_base_url }}
-      ANDROID_RELEASE_STORE_FILE: ${{ runner.temp }}/yarsalam-release.keystore
     steps:
       - uses: actions/checkout@v5
         with:
@@ -93,6 +92,8 @@ jobs:
           lines[matches[0]] = "export const API_BASE_URL = " + repr(value) + ";"
           path.write_text(chr(10).join(lines) + chr(10))
           PY
+      - name: Set signing keystore path
+        run: echo "ANDROID_RELEASE_STORE_FILE=$RUNNER_TEMP/yarsalam-release.keystore" >> "$GITHUB_ENV"
       - name: Validate private signing secrets and materialize keystore
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
