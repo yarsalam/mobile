@@ -111,6 +111,7 @@ jobs:
       - name: Build signed production APKs
         working-directory: android
         env:
+          ANDROID_RELEASE_STORE_FILE: ${{ runner.temp }}/yarsalam-release.keystore
           ANDROID_RELEASE_STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_RELEASE_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_RELEASE_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
