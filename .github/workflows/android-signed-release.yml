@@ -24,7 +24,7 @@ concurrency:
 jobs:
   signed-release:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 90
     env:
       API_BASE_URL: ${{ inputs.api_base_url }}
     steps:
@@ -39,6 +39,15 @@ jobs:
         with:
           distribution: temurin
           java-version: "17"
+      - name: Cache Gradle distribution and dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper/dists
+          key: ${{ runner.os }}-gradle-${{ hashFiles('android/gradle/wrapper/gradle-wrapper.properties', 'android/**/*.gradle*', 'android/gradle.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
       - uses: android-actions/setup-android@v3
         with:
           packages: platform-tools
@@ -108,6 +117,20 @@ jobs:
           printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$ANDROID_RELEASE_STORE_FILE"
           test -s "$ANDROID_RELEASE_STORE_FILE"
           chmod 600 "$ANDROID_RELEASE_STORE_FILE"
+      - name: Use official Gradle distribution endpoint
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path("android/gradle/wrapper/gradle-wrapper.properties")
+          content = path.read_text()
+          old = r"https\\://mirrors.aliyun.com/gradle/distributions/v9.4.1/gradle-9.4.1-bin.zip"
+          new = r"https\\://services.gradle.org/distributions/gradle-9.4.1-bin.zip"
+          if old not in content:
+              raise SystemExit("Expected pinned Gradle mirror URL was not found; refusing an unexpected wrapper change.")
+          path.write_text(content.replace(old, new, 1))
+          print("Gradle 9.4.1 pinned to the official services.gradle.org distribution endpoint; SHA-256 pin unchanged.")
+          PY
       - name: Build signed production APKs
         working-directory: android
         env:
