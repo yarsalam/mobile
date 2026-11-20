@@ -24,7 +24,7 @@ concurrency:
 jobs:
   signed-release:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 90
     env:
       API_BASE_URL: ${{ inputs.api_base_url }}
     steps:
@@ -39,6 +39,15 @@ jobs:
         with:
           distribution: temurin
           java-version: "17"
+      - name: Cache Gradle distribution and dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper/dists
+          key: ${{ runner.os }}-gradle-${{ hashFiles('android/gradle/wrapper/gradle-wrapper.properties', 'android/**/*.gradle*', 'android/gradle.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
       - uses: android-actions/setup-android@v3
         with:
           packages: platform-tools
@@ -100,6 +109,7 @@ jobs:
           ANDROID_RELEASE_STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_RELEASE_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_RELEASE_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_RELEASE_STORE_FILE: ${{ runner.temp }}/yarsalam-release.keystore
         run: |
           set -euo pipefail
           test -n "$ANDROID_KEYSTORE_BASE64" || { echo "::error::Missing ANDROID_KEYSTORE_BASE64 secret"; exit 1; }
@@ -109,9 +119,24 @@ jobs:
           printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$ANDROID_RELEASE_STORE_FILE"
           test -s "$ANDROID_RELEASE_STORE_FILE"
           chmod 600 "$ANDROID_RELEASE_STORE_FILE"
+      - name: Use official Gradle distribution endpoint
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path("android/gradle/wrapper/gradle-wrapper.properties")
+          content = path.read_text()
+          old = r"https\://mirrors.aliyun.com/gradle/distributions/v9.4.1/gradle-9.4.1-bin.zip"
+          new = r"https\://services.gradle.org/distributions/gradle-9.4.1-bin.zip"
+          if old not in content:
+              raise SystemExit("Expected pinned Gradle mirror URL was not found; refusing an unexpected wrapper change.")
+          path.write_text(content.replace(old, new, 1))
+          print("Gradle 9.4.1 pinned to the official services.gradle.org distribution endpoint; SHA-256 pin unchanged.")
+          PY
       - name: Build signed production APKs
         working-directory: android
         env:
+          ANDROID_RELEASE_STORE_FILE: ${{ runner.temp }}/yarsalam-release.keystore
           ANDROID_RELEASE_STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_RELEASE_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_RELEASE_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
@@ -125,8 +150,10 @@ jobs:
           test -s "$OUT/app-armeabi-v7a-release.apk"
           cp "$OUT/app-arm64-v8a-release.apk" dist/yarsalam-arm64-v8a.apk
           cp "$OUT/app-armeabi-v7a-release.apk" dist/yarsalam-armeabi-v7a.apk
+          APKSIGNER="$(find "${ANDROID_HOME:?}/build-tools" -type f -name apksigner -print | sort -V | tail -n 1)"
+          test -x "$APKSIGNER" || { echo "::error::Android SDK apksigner was not found under $ANDROID_HOME/build-tools"; exit 1; }
           for apk in dist/*.apk; do
-            apksigner verify --verbose --print-certs "$apk"
+            "$APKSIGNER" verify --verbose --print-certs "$apk"
           done
           (cd dist && sha256sum *.apk > SHA256SUMS.txt)
           git rev-parse HEAD > dist/SOURCE_COMMIT.txt
