@@ -124,8 +124,8 @@ jobs:
 
           path = Path("android/gradle/wrapper/gradle-wrapper.properties")
           content = path.read_text()
-          old = r"https\\://mirrors.aliyun.com/gradle/distributions/v9.4.1/gradle-9.4.1-bin.zip"
-          new = r"https\\://services.gradle.org/distributions/gradle-9.4.1-bin.zip"
+          old = r"https\://mirrors.aliyun.com/gradle/distributions/v9.4.1/gradle-9.4.1-bin.zip"
+          new = r"https\://services.gradle.org/distributions/gradle-9.4.1-bin.zip"
           if old not in content:
               raise SystemExit("Expected pinned Gradle mirror URL was not found; refusing an unexpected wrapper change.")
           path.write_text(content.replace(old, new, 1))
